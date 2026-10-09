@@ -13,6 +13,7 @@ progressSchema.index({ studentId: 1, moduleKey: 1 }, { unique: true });
 export const LearningProgress = mongoose.model('LearningProgress', progressSchema);
 
 const assignmentSchema = new Schema({
+  assessmentId: { type: Schema.Types.ObjectId, ref: 'Assessment', default: null },
   studentId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   title: { type: String, required: true, maxlength: 200 },
   topic: { type: String, required: true, maxlength: 100 },
@@ -30,7 +31,7 @@ export const AssessmentAssignment = mongoose.model('AssessmentAssignment', assig
 const activitySchema = new Schema({
   studentId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   key: { type: String, required: true, maxlength: 200 },
-  kind: { type: String, required: true, enum: ['dashboard_visit', 'resume_saved', 'resume_analyzed', 'interview_started', 'interview_answered', 'interview_completed'] },
+  kind: { type: String, required: true, enum: ['dashboard_visit', 'resume_saved', 'resume_analyzed', 'interview_started', 'interview_answered', 'interview_completed', 'interview_feedback', 'assessment_started', 'assessment_completed'] },
   title: { type: String, required: true, maxlength: 200 },
   day: { type: String, required: true, match: /^\d{4}-\d{2}-\d{2}$/ }
 }, options);

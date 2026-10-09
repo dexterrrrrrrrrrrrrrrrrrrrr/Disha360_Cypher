@@ -1,0 +1,13 @@
+import { z } from 'zod';
+export const competencyNames = ['communication', 'technicalAccuracy', 'problemSolving', 'relevance', 'clarity'] as const;
+const text = z.string().trim().min(1).max(1500);
+const evidence = z.object({ questionNumber: z.number().int().min(1).max(10), quote: z.string().min(1).max(5000) }).strict();
+const competency = z.object({ score: z.number().int().min(0).max(100).nullable(), rationale: text, evidence: z.array(evidence).max(10) }).strict();
+const observation = evidence.extend({ observation: text });
+export const feedbackSchema = z.object({ competencies: z.object({ communication: competency, technicalAccuracy: competency, problemSolving: competency, relevance: competency, clarity: competency }).strict(), strengths: z.array(observation).max(10), improvements: z.array(observation).max(10), questions: z.array(z.object({ questionNumber: z.number().int().min(1).max(10), score: z.number().int().min(0).max(100), quote: z.string().min(1).max(5000), assessment: text, suggestions: z.array(text).min(1).max(5) }).strict()).min(1).max(10), nextSteps: z.array(text).min(1).max(10) }).strict();
+export type FeedbackEvaluation = z.infer<typeof feedbackSchema>;
+const jsonText = { type: 'string' };
+const jsonEvidence = { type: 'object', properties: { questionNumber: { type: 'integer' }, quote: jsonText }, required: ['questionNumber', 'quote'], additionalProperties: false };
+const jsonCompetency = { type: 'object', properties: { score: { type: ['integer', 'null'] }, rationale: jsonText, evidence: { type: 'array', items: jsonEvidence } }, required: ['score', 'rationale', 'evidence'], additionalProperties: false };
+const jsonObservation = { ...jsonEvidence, properties: { ...jsonEvidence.properties, observation: jsonText }, required: ['questionNumber', 'quote', 'observation'] };
+export const feedbackJsonSchema = { type: 'object', properties: { competencies: { type: 'object', properties: Object.fromEntries(competencyNames.map(key => [key, jsonCompetency])), required: [...competencyNames], additionalProperties: false }, strengths: { type: 'array', items: jsonObservation }, improvements: { type: 'array', items: jsonObservation }, questions: { type: 'array', items: { type: 'object', properties: { questionNumber: { type: 'integer' }, score: { type: 'integer' }, quote: jsonText, assessment: jsonText, suggestions: { type: 'array', items: jsonText } }, required: ['questionNumber', 'score', 'quote', 'assessment', 'suggestions'], additionalProperties: false } }, nextSteps: { type: 'array', items: jsonText } }, required: ['competencies', 'strengths', 'improvements', 'questions', 'nextSteps'], additionalProperties: false };

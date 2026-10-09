@@ -1,4 +1,5 @@
 import { LoaderCircle } from 'lucide-react';
+export function Skeleton() { return <div aria-hidden="true" className="space-y-4"><div className="h-6 w-2/3 rounded bg-slate-100"/><div className="h-24 rounded-lg bg-slate-100"/><div className="h-6 w-1/2 rounded bg-slate-100"/></div>; }
 
 export function PageHeading({ title, detail }: { title: string; detail: string }) { return <div className="mb-7"><p className="mb-2 text-xs font-semibold uppercase tracking-widest text-brand">Your preparation workspace</p><h1 className="text-2xl font-bold text-ink sm:text-3xl">{title}</h1><p className="mt-2 text-sm leading-6 text-slate-500">{detail}</p></div>; }
 export function Loading() { return <p role="status" className="flex items-center gap-2 py-10 text-sm text-slate-500"><LoaderCircle size={18} className="animate-spin"/>Loading your records…</p>; }

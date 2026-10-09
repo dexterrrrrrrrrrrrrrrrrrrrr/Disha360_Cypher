@@ -11,7 +11,8 @@
     "test": "vitest run",
     "db:check": "tsx src/utils/checkDatabase.ts",
     "seed:demo": "tsx src/utils/seedDemo.ts",
-    "user:create": "tsx src/utils/provisionUser.ts"
+    "user:create": "tsx src/utils/provisionUser.ts",
+    "seed:assessments": "tsx src/utils/seedAssessments.ts"
   },
   "dependencies": {
     "cors": "^2.8.5",

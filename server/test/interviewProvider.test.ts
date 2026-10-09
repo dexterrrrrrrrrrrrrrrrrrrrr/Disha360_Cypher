@@ -2,6 +2,7 @@ import { createServer, type Server } from 'node:http';
 import { afterEach, it, expect } from 'vitest';
 import OpenAI from 'openai';
 import { OpenAIInterviewProvider } from '../src/services/interviewProvider.js';
+import { competencyNames } from '../src/validators/feedback.js';
 const setup = { type: 'technical' as const, difficulty: 'beginner' as const, targetRole: 'Software engineer', focus: 'React', questionLimit: 3 };
 let server: Server | undefined;
 afterEach(async () => { if (server) await new Promise<void>(resolve => { server!.close(() => resolve()); }); server = undefined; });
@@ -11,6 +12,17 @@ async function endpoint(status: number, body: unknown, inspect?: (data: Record<s
   return new OpenAI({ apiKey: 'explicit-local-test-key', baseURL: `http://127.0.0.1:${address.port}/v1`, maxRetries: 0, timeout: 1000 });
 }
 function response(text: string) { return { id: 'resp_test', object: 'response', created_at: 0, status: 'completed', error: null, incomplete_details: null, output: [{ id: 'msg_test', type: 'message', role: 'assistant', status: 'completed', content: [{ type: 'output_text', text, annotations: [] }] }] }; }
+it('requests structured text-only feedback through the Responses SDK with actual answered pairs', async () => {
+  const raw = { competencies: Object.fromEntries(competencyNames.map(key => [key, { score: 50, rationale: 'Limited explanation.', evidence: [{ questionNumber: 1, quote: 'I used React.' }] }])), strengths: [], improvements: [], questions: [{ questionNumber: 1, score: 50, quote: 'I used React.', assessment: 'More detail needed.', suggestions: ['Explain a design decision.'] }], nextSteps: ['Practise describing a concrete project.'] };
+  let request: Record<string, unknown> = {};
+  const client = await endpoint(200, response(JSON.stringify(raw)), body => { request = body; });
+  expect(await new OpenAIInterviewProvider('unused', 'gpt-4.1-mini', client).feedback(setup, [{ role: 'interviewer', text: 'Describe a project.', at: new Date() }, { role: 'student', text: 'I used React.', at: new Date() }])).toEqual(raw);
+  expect(request.store).toBe(false); expect(request.text).toMatchObject({ format: { type: 'json_schema', name: 'interview_feedback', strict: true } }); expect(request.input).toContain('I used React.'); expect(request.instructions).toMatch(/Do not assess vocal confidence/);
+});
+it('rejects malformed feedback at the provider boundary', async () => {
+  const client = await endpoint(200, response('{"overallScore":100}'));
+  await expect(new OpenAIInterviewProvider('unused', 'model', client).feedback(setup, [])).rejects.toMatchObject({ status: 503, code: 'AI_FEEDBACK_UNAVAILABLE' });
+});
 it('uses the real SDK Responses request contract with structured output and actual history', async () => {
   let request: Record<string, unknown> = {}; let path = '';
   const client = await endpoint(200, response(JSON.stringify({ question: 'What testing approach would you use for that component?' })), (body, url) => { request = body; path = url || ''; });

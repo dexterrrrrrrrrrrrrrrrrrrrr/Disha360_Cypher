@@ -13,13 +13,17 @@ import { ResumeEditor } from './pages/ResumeEditor';
 import { ResumeAnalyzer } from './pages/ResumeAnalyzer';
 import { Interviews } from './pages/Interviews';
 import { InterviewChat } from './pages/InterviewChat';
+import { Assessments } from './pages/Assessments';
+import { AssessmentInstructions } from './pages/AssessmentInstructions';
+import { AssessmentAttempt } from './pages/AssessmentAttempt';
+import { AssessmentAnalytics } from './pages/AssessmentAnalytics';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode><BrowserRouter><AuthProvider>
     <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-white focus:p-3">Skip to main content</a>
     <Routes>
       <Route path="/login" element={<Login/>}/><Route path="/register" element={<Register/>}/>
-      <Route element={<ProtectedRoute role="student"/>}><Route path="/dashboard/student" element={<StudentDashboard/>}/><Route path="/resumes" element={<Resumes/>}/><Route path="/resumes/new" element={<ResumeEditor/>}/><Route path="/resumes/:id" element={<ResumeEditor/>}/><Route path="/resume-analyzer" element={<ResumeAnalyzer/>}/><Route path="/interviews" element={<Interviews/>}/><Route path="/interviews/:id" element={<InterviewChat/>}/></Route>
+      <Route element={<ProtectedRoute role="student"/>}><Route path="/dashboard/student" element={<StudentDashboard/>}/><Route path="/resumes" element={<Resumes/>}/><Route path="/resumes/new" element={<ResumeEditor/>}/><Route path="/resumes/:id" element={<ResumeEditor/>}/><Route path="/resume-analyzer" element={<ResumeAnalyzer/>}/><Route path="/interviews" element={<Interviews/>}/><Route path="/interviews/:id" element={<InterviewChat/>}/><Route path="/assessments" element={<Assessments/>}/><Route path="/assessments/:id" element={<AssessmentInstructions/>}/><Route path="/attempts/:id" element={<AssessmentAttempt/>}/><Route path="/analytics" element={<AssessmentAnalytics/>}/></Route>
       {(['trainer', 'admin'] as const).map(role => <Route key={role} element={<ProtectedRoute role={role}/>}><Route path={`/dashboard/${role}`} element={<Dashboard role={role}/>}/></Route>)}
       <Route path="*" element={<Navigate to="/login" replace/>}/>
     </Routes>

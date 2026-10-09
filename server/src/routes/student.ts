@@ -8,6 +8,9 @@ import { createAnalysis, listAnalyses, getAnalysis } from '../controllers/analys
 import { interviewControllers } from '../controllers/interviews.js';
 import type { InterviewProvider } from '../services/interviewProvider.js';
 import { rateLimit } from 'express-rate-limit';
+import { feedbackControllers } from '../controllers/feedback.js';
+import { listAssessments, assessmentDetails, beginAssessment, listAttempts, getAttempt, saveProgress, submitAttempt } from '../controllers/assessments.js';
+import { studentAnalytics } from '../controllers/analytics.js';
 
 export function studentRoutes(clientOrigin: string, status = databaseStatus, provider?: InterviewProvider) {
   const router = Router();
@@ -15,7 +18,7 @@ export function studentRoutes(clientOrigin: string, status = databaseStatus, pro
   router.use(protectMutations(clientOrigin));
   router.use((_req, _res, next) => { if (status() !== 'connected') throw new AppError(503, 'DATABASE_UNAVAILABLE', 'The database is unavailable.'); next(); });
   router.use(requireAuth, requireRole('student'));
-  router.get('/dashboard', async (req, res) => { res.json({ success: true, data: await dashboard(req.user!) }); });
+  router.get('/dashboard', async (req, res) => { res.json({ success: true, data: await dashboard(req.user!, !!req.app.locals.allowDemoAccounts) }); });
   router.post('/activity/check-in', async (req, res) => {
     await recordActivity(req.user!.id as string, 'dashboard_visit', 'Checked in to your preparation workspace', `check-in:${new Date().toISOString().slice(0, 10)}`);
     res.json({ success: true, data: { message: 'Daily check-in recorded.' } });
@@ -37,5 +40,16 @@ export function studentRoutes(clientOrigin: string, status = databaseStatus, pro
   router.get('/interviews/:id', interviews.get);
   router.post('/interviews/:id/answers', aiLimit, interviews.answer);
   router.post('/interviews/:id/complete', interviews.complete);
+  const feedback = feedbackControllers(provider);
+  router.get('/interviews/:id/feedback', feedback.get);
+  router.post('/interviews/:id/feedback', aiLimit, feedback.generate);
+  router.get('/assessments', listAssessments);
+  router.get('/assessments/:id', assessmentDetails);
+  router.post('/assessments/:id/attempts', beginAssessment);
+  router.get('/attempts', listAttempts);
+  router.get('/attempts/:id', getAttempt);
+  router.put('/attempts/:id/progress', saveProgress);
+  router.post('/attempts/:id/submit', submitAttempt);
+  router.get('/analytics', studentAnalytics);
   return router;
 }

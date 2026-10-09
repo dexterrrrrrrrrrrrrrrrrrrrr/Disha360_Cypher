@@ -1,6 +1,6 @@
 # Disha360 Placement Training LMS
 
-A placement training LMS built with React, Vite, TypeScript, Tailwind, Express, and MongoDB. **Checkpoints 1–4 are implemented and verified.** Checkpoint 5 has a real OpenAI integration and tested session workflows; live AI verification requires backend credentials. The student dashboard reads actual MongoDB records and shows empty states when performance evidence is absent. The existing design system and project structure are preserved.
+A placement training LMS built with React, Vite, TypeScript, Tailwind, Express, and MongoDB. **Checkpoints 1–4, 7 and 8 are implemented and locally verified.** Checkpoints 5–6 have a real OpenAI integration and tested workflows; live AI verification requires backend credentials. The student dashboard reads actual MongoDB records and shows empty states when performance evidence is absent. The existing design system and project structure are preserved.
 
 ## Install and run
 
@@ -136,18 +136,18 @@ curl -i http://localhost:4000/api/v1/auth/me # 401 when no cookie is supplied
 
 `client/src/features/auth` contains session state and protected routing; `layouts/AuthLayout.tsx` preserves the shared sign-in design. Backend modules separate models, validators, services, controllers, middleware, routes, and operator utilities. npm workspaces keep installation simple.
 
-Checkpoints 1–4 are implemented; Checkpoint 5 awaits live provider verification. Learning delivery, assessment taking, interview feedback reports, coding, and content management remain out of scope (Checkpoints 6–15). Your locally verified Atlas connection was not re-tested here because its credentials are not available in this cloud runtime. The auth flows were verified using an isolated actual MongoDB server. See [docs/CHECKPOINTS.md](docs/CHECKPOINTS.md) for status.
+Checkpoints 1–4, 7 and 8 are implemented; Checkpoints 5–6 await live provider verification. Checkpoints 9–15 remain out of scope. Your locally verified Atlas connection was not re-tested here because its credentials are not available in this cloud runtime. The auth flows were verified using an isolated actual MongoDB server. See [docs/CHECKPOINTS.md](docs/CHECKPOINTS.md) for status.
 
-## Student preparation features (Checkpoints 2–5)
+## Student preparation features (Checkpoints 2–8)
 
-- **Dashboard `/dashboard/student`:** personal details, learning completion, recorded assessment average, upcoming assignments, UTC daily streak, persisted recent activity, and next actions derived from the student's resume/interview records. Readiness is an explicit estimate: 25% profile completeness + 40% recorded lesson completion + 35% recorded assessment average. Missing performance records contribute no points; their displayed metrics are blank. A new student with a complete profile has a 25% estimate, not an invented test score. Dashboard visits count as daily check-ins. No student endpoint can create learning progress or assessment scores. The systems that produce learning/assessment evidence remain later checkpoints.
+- **Dashboard `/dashboard/student`:** personal details, learning completion, recorded assessment average, upcoming assignments, UTC daily streak, persisted recent activity, and next actions derived from the student's resume/interview records. Readiness is an explicit estimate: 25% profile completeness + 40% recorded lesson completion + 35% recorded assessment average. Missing performance records contribute no points; their displayed metrics are blank. A new student with a complete profile has a 25% estimate, not an invented test score. Dashboard visits count as daily check-ins. Students cannot set scores: the assessment engine calculates them from saved answers. Learning delivery remains a later checkpoint.
 - **Resume studio `/resumes`:** private structured drafts, personal details, education, skills, projects, experience, certifications; Classic, Modern, and Compact templates; live preview; explicit save; server-generated PDF. Reload preserves saved content. Save before exporting; the PDF uses the saved version. Concurrent edits are rejected with 409 instead of overwriting a newer version. Resume lists show the latest 100 drafts.
 - **ATS analyzer `/resume-analyzer`:** select a saved resume and enter a 50–12,000-character job description. Deterministic keyword extraction, matched/missing keywords, five completeness checks, evidence checks, component breakdown and suggestions. Scores are reproducible, never random. No AI credentials are needed for this heuristic. History retains private immutable content snapshots and the rubric/version used, including after the original resume is deleted. Latest 100 results are listed.
-- **Interviews `/interviews`:** Technical, Behavioral or HR; Beginner, Intermediate or Advanced; target role, optional focus, 3–10 questions; AI-generated first questions and adaptive follow-ups; private saved transcripts, history, resumable active sessions, automatic completion or early end. The server forwards actual prior questions and answers to OpenAI. Concurrent processing uses a bounded MongoDB lease and version checks. Failed question generation leaves the transcript/version unchanged and permits retry. Text answers remain in the input after a failed request. No feedback report is generated in this checkpoint.
+- **Interviews `/interviews`:** Technical, Behavioral or HR; Beginner, Intermediate or Advanced; target role, optional focus, 3–10 questions; AI-generated first questions and adaptive follow-ups; private saved transcripts, history, resumable active sessions, automatic completion or early end. The server forwards actual prior questions and answers to OpenAI. Concurrent processing uses a bounded MongoDB lease and version checks. Failed question generation leaves the transcript/version unchanged and permits retry. Text answers remain in the input after a failed request. Completed sessions can now generate saved evidence-linked feedback reports; see Checkpoint 6 below.
 
 All feature routes are protected for Students on both client and server. Ownership always comes from the authenticated session, never a submitted student ID. Cross-student record access returns 404. Private responses use `Cache-Control: no-store`; mutations require the existing CSRF header/origin checks. Inputs use Zod, records are persisted in MongoDB, and MongoDB unavailability returns a safe 503. No credentials or session tokens enter React code.
 
-### AI configuration (Checkpoint 5)
+### AI configuration (Checkpoints 5–6)
 
 In your existing **private `server/.env`**, add:
 
@@ -181,4 +181,36 @@ npm run dev
 
 Checks were run separately after each phase: 56, 60, 64, then 83 passing tests. Both workspace TypeScript checks and both production builds passed at each phase. Current tests include real disposable MongoDB persistence/ownership, deterministic scoring, PDF signatures for all templates, watcher regression, provider errors, transcript context, concurrency, expiry recovery, and Responses SDK requests against an explicit local HTTP fixture. Those provider fixtures are tests, not a runtime fallback and not proof of a live AI call. Browser checks cover registration/session restoration, dashboard empty states, resume persistence/PDF download, analysis/history, responsive navigation, unconfigured AI, and interview chat workflows with an explicitly labeled local protocol fixture.
 
-Actual Atlas and live OpenAI were not contacted in this cloud task: no credentials are available here. Atlas was previously verified by you locally. Checkpoint 5 remains **Blocked for live-provider verification**, rather than claiming a verified live AI interview. See [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md) for routes, models, files and limitations, and [docs/CHECKPOINTS.md](docs/CHECKPOINTS.md) for status.
+Actual Atlas and live OpenAI were not contacted in this cloud task: no credentials are available here. Atlas was previously verified by you locally. Checkpoints 5–6 remain **Blocked for live-provider verification**, rather than claiming a verified live AI interview. See [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md) for routes, models, files and limitations, and [docs/CHECKPOINTS.md](docs/CHECKPOINTS.md) for status.
+
+## Interview reports and aptitude practice (Checkpoints 6–8)
+
+- **Feedback:** complete an interview, then review the saved AI estimate, competency breakdown, cited answer evidence, strengths, improvements, question analysis and preparation plan. Unsupported competencies are unassessed. Vocal confidence/tone/body language cannot be inferred from text. Missing AI configuration means feedback unavailable, never fake evaluations. History links reopen saved reports.
+- **Assessments `/assessments`:** database-backed published aptitude, reasoning, verbal and technical tests; instructions, randomized fixed snapshots, immediate server-confirmed answer saves, question navigation, refresh/resume, server-enforced timer, manual/automatic finalization, results/explanations and history. Correct answers are hidden until finalization; scores come from the backend.
+- **Insights `/analytics`:** actual overall/category/topic/difficulty accuracy, question/assessment time, evidence-limited weak/strong topics, UTC trends, history and anonymous equivalent-test batch comparisons. No data, insufficient data and real zero are distinct. Dashboard scores/readiness/activity/next steps now use finalized attempts without double-counting.
+
+### Exact local verification for Checkpoints 6–8
+
+From the repository root, keep your existing private `server/.env` and verified Atlas URI. Use a dedicated development database for sample data:
+
+```sh
+npm ci
+npm run db:check
+# Optional; NODE_ENV must be development. Never seeds on startup.
+npm run seed:assessments
+npm run typecheck
+npm test
+npm run build
+npm run dev
+```
+
+1. Open `http://localhost:5173` and sign in as a Student. Open Insights before submitting any assessments: expect no-data and Comparison unavailable, not invented scores.
+2. Open Assessments. Development samples are explicitly labeled. Filter each category and review instructions/scoring. Start a test, answer, navigate and reload: saved selection, question order, option order and timer persist. Use Review unanswered and clear an answer. Submit early, accept the unanswered warning and inspect the score explanation and per-question answer review. Reload and reopen history: the result is unchanged.
+3. Start another attempt and let its displayed timer expire (samples are five minutes). Saved answers are automatically finalized, further editing is disabled, and closing/reopening the tab does not extend time. Repeated result visits do not duplicate completion activities. Each sample permits three attempts.
+4. Open Insights: compare metrics/history against your actual results. After only one attempt, topic interpretations are insufficient evidence. More questions alone do not bypass the distinct-attempt/unique-question thresholds. Check Overview's assessment average, unchanged readiness formula, recent activity and recommended actions.
+5. Batch comparison remains unavailable until an operator supplies **real** Batch/Enrollment data and at least three other members complete the same assessment version and exact question set. Full batch-management UI is deliberately reserved for Checkpoint 14. No other student's individual performance is exposed.
+6. For feedback, privately configure `OPENAI_API_KEY` and an accessible `OPENAI_MODEL` in **server/.env**, with billing/model access; restart development. Start an interview, answer with concrete evidence, complete it and wait for the report. Inspect quoted evidence and AI-estimate labeling; reload and reopen from history. Unsupported technical competencies may be unassessed. Without a key, the application explicitly shows AI/feedback unavailable.
+7. Sign out and verify private routes require login. Sign in as another Student and try the first student's attempt/interview URL: access must fail. Trainer/Admin accounts cannot access student APIs. Verify mobile/tablet navigation, assessments, insights and reports.
+8. Verify backend health/readiness at `http://localhost:4000/api/v1/health` and `/api/v1/ready`. Tests use disposable MongoDB, not Atlas. For exact API bodies, scoring/analytics formulas and limitations, see [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md).
+
+Checkpoints 6–8 were developed and checked sequentially (90 → 101 → 107 tests). Final review passed **108 tests in 13 files**, client/server/test TypeScript checks and both production builds. Chromium verified refresh/resume, manual/automatic submission, real analytics and saved feedback using an explicitly labeled local provider fixture. Live OpenAI/Atlas were not contacted here because credentials are absent. Feedback estimates are model judgments, not objective measurements; validating quoted evidence cannot establish that every judgment is correct. Keep all credentials in the private backend configuration. The approved pre-commit review reran all 108 tests, TypeScript checks and both production builds successfully; backend enforcement, ownership, explicit development seeding and Git exclusions were reviewed.
