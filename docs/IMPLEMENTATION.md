@@ -333,3 +333,155 @@ Automated tests cover directory/search/filter, details, student-only access, rea
 Known limitations: illustrative recruitment content only; no authoring UI, automatic activity verification, company-specific AI prompts, extra dashboard score, pagination or official employer feed. Existing live Atlas/OpenAI/Judge0 and secure PDF limitations are unchanged. No credentials, generated output or dependencies belong in Git. The implementation was prepared for review before approved final verification.
 
 Final Checkpoint 12 verification: `npm test` passed **161 tests / 18 files**, `npm run typecheck` passed client/server/test TypeScript, and `npm run build` passed both production targets. The existing advisory warning for the lazy Monaco chunk remains. Chromium flows verified real proxy/database-backed directory/search/detail/checklist refresh/uncheck, published learning navigation, missing-resource states, interview workspace navigation and 375/768/1440px layouts without overflow/runtime errors. Live external services were not invoked. The first cold test run hit the MongoDB binary download-lock race; the binary was subsequently cached with checksum verification intact. If a fresh machine encounters that prerequisite race, initialize the cache with `npm run test -w server -- test/companies.test.ts`, then run the full `npm test`; never disable checksum verification. All application regressions passed in the final run.
+
+## Checkpoint 14 — Trainer/Admin management
+
+Base: `28affda54c50922ebe1f0e9ba38428112d8a4c84`. Preserves the existing uncommitted Phases 1–3 and extends the modular MERN application. Checkpoints 13/15 are untouched. Authentication, secure provisioning, Student timers/randomization/grading, coding judge and interview services are retained.
+
+### Phase delivery
+
+| Phase | Implemented scope |
+|---|---|
+| 1–3 | Real role dashboards, Admin batch CRUD/trainer/membership/archive, scoped Student directory and performance; original 202-test baseline retained |
+| 4 | Owned assessment/question CRUD, duration/scoring, draft versions, safe publication, validated atomic CSV import, batch assignments and safe submissions |
+| 5 | Existing content CRUD plus active-batch assignments and current authorized Student completion |
+| 6 | Real assessment/coding/learning/company reports, batch/assessment/Admin-Trainer filters and authorized CSV exports |
+| 7 | Admin Trainer directory, actual workloads and versioned assignment/removal; existing secure account provisioning |
+| 8 | Working responsive staff navigation, management forms, search/filter, loading/error/empty states and downloads |
+| 9 | Regression/security tests and actual browser workflows; results below |
+| 10 | README walkthrough and implementation/API/model/formula/limit documentation |
+
+### Roles, persistence and integrity
+
+All `/api/v1/staff` APIs require a connected database and current Trainer/Admin session. Existing CSRF origin/header protection, rate limiting, error envelopes and `Cache-Control: no-store` apply. Student gets 403; an unrelated resource gets 404. Admin manages all resources; Trainer assessment/module mutations require ownership. Legacy ownerless assessments are Admin-only. Trainer read scopes use current active Enrollment in current active assigned Batches, recomputed on each request. Revocation takes effect immediately. Account DTOs whitelist safe profile fields; private resumes, interview transcripts, code source/drafts, tokens and answer snapshots are excluded from reports.
+
+Reuse `Batch` and `Enrollment`: additive description, Trainer IDs and optimistic version with `(trainerIds,active)` index. Unique `(batchId,studentId)` prevents duplicate memberships; removal/archive preserves history. Admin validates actual Student/Trainer roles, max 20 distinct Trainers and strict inputs. Legacy missing batch version safely upgrades on first edit. No role mutation or startup provisioning added.
+
+Reuse `Assessment`, `Question`, `TestAttempt`, learning models and performance records. Assessment gains optional owner ID/index. Questions gain optional owner, managed assessment reference and normalized SHA-256 prompt fingerprint. Unique partial `(managedAssessmentId,fingerprint)` index protects managed duplicates without changing legacy shared rows. Shared legacy questions are copied for edits and detached on deletion; private attempt snapshots remain immutable.
+
+New `BatchAssignment`: batchId, kind (`assessment`/`learning`), resourceId, assignedBy, optional dueAt (required for assessments), timestamps, unique `(batchId,kind,resourceId)` and resource lookup index. Assessment and module assignments share one collection. Repeat writes are idempotent; current active batch and publication checks use MongoDB transactions with batch/resource write guards against concurrent archive/reassignment. Removing an assignment never deletes attempts/progress.
+
+All assessment configuration/question edits and CSV imports are versioned and transactional. Published assessments must be unpublished before editing; publishing validates pool size, category and allowed published/shared resources. Only managed question publication flags change. Existing attempt scoring/deadline/randomized snapshots and ownership logic are unchanged. Changing later drafts cannot rewrite prior scores. DueAt is an advisory assignment deadline, not a replacement for the backend attempt deadline.
+
+**MongoDB Atlas or another replica set is required** for these multi-document transactions; unsupported standalone MongoDB returns 503 `TRANSACTIONS_REQUIRED` without partial changes. No new environment variables. Startup creates indexes but never seeds or creates privileged accounts.
+
+### API inventory
+
+Prefix `/api/v1/staff`; standard JSON envelopes except CSV downloads.
+
+| Method | Path | Scope/purpose |
+|---|---|---|
+| GET | `/dashboard` | Actual Trainer-scoped/Admin institution counts |
+| GET/POST | `/batches` | Scoped listing / Admin creation |
+| GET/PUT | `/batches/:id` | Authorized detail / Admin versioned edit/archive |
+| PUT | `/batches/:id/members/:studentId` | Admin validated idempotent `{active}` enrollment |
+| GET | `/people?role=student\|trainer&search=...` | Admin safe account picker; 500-match limit/truncated flag |
+| GET | `/students?search=&department=&batchId=&page=` | Scoped Student directory; 25/page |
+| GET | `/students/:id` | Safe profile and actual authorized performance |
+| GET/POST | `/assessments` | Owned Trainer/Admin-all listing / create draft |
+| GET/PUT | `/assessments/:id` | Owned detail including staff-only keys / draft config `{version,content}` |
+| POST | `/assessments/:id/questions` | Add validated question `{version,content}` |
+| PUT/DELETE | `/assessments/:id/questions/:questionId` | Draft question edit `{version,content}` / delete `{version}` |
+| PUT | `/assessments/:id/publish` | `{version,published}` with complete-pool validation |
+| GET | `/assessments/csv-template` | Download exact CSV template |
+| POST | `/assessments/:id/import` | `{version,csv}` atomic validated import |
+| GET/POST | `/assessments/:id/assignments` | Scoped list / `{batchId,dueAt}` authorized active-batch assignment |
+| DELETE | `/assessments/:id/assignments/:batchId` | Remove authorized assignment only |
+| GET | `/assessments/:id/submissions?batchId=` | Owned assessment, scoped Student statuses and safe finalized grades |
+| GET | `/assessments/:id/results.csv?batchId=` | Owned assessment and authorized filtered attempt export |
+| GET/POST | `/learning/:id/assignments` | Own Trainer/Admin-all module, scoped list / `{batchId}` assignment |
+| DELETE | `/learning/:id/assignments/:batchId` | Authorized module assignment removal |
+| GET | `/learning/:id/completion?batchId=` | Assigned authorized Students and current lesson completion |
+| GET | `/assignments` | Real batch assignment directory; foreign unpublished resources hidden; published foreign resources read-only |
+| GET | `/report-options` | Authorized real batch/assessment filter choices; Admin Trainer choices |
+| GET | `/reports?batchId=&assessmentId=&trainerId=&search=&page=` | Real scoped metrics, 25/page; Trainer cannot use trainerId |
+| GET | `/reports/export` | Same filters, all authorized rows up to 1,000 Students; larger selection requires narrowing |
+| GET | `/trainers?search=` | Admin actual Trainer workload directory |
+| PUT | `/trainers/:trainerId/batches/:batchId` | Admin `{assigned,version}`; actual Trainer role; no new archived assignment |
+
+Existing `/api/v1/learning/manage/*` remains the content CRUD API. Its progress serializer now additionally limits Trainer participants to currently assigned Students. Existing public Student APIs remain unchanged.
+
+Protected frontend routes: `/dashboard/:role`, `/manage/:role/batches[/id]`, `/manage/:role/students[/id]`, `/manage/:role/assessments[/id]` (new uses `/new`), `/manage/:role/assignments`, `/manage/:role/reports`, `/manage/admin/trainers`, and existing `/learning/manage/:role[/id]`.
+
+### CSV format and safety
+
+Exact headers: `prompt,topic,difficulty,option_a,option_b,option_c,option_d,correct_option,explanation,expected_seconds`. Downloadable UI template supplies an example. Difficulty is easy/medium/hard; correct option is a/b/c/d; four unique non-empty choices required. Parser `csv-parse` supports quoted commas/newlines and UTF-8 BOM. Limits: 50,000 UTF-8 bytes, 100 rows/import, 10,000-character parser record, 200 questions/pool. All rows parse and validate before persistence. Errors identify row/field; duplicate prompts within a file or existing pool reject the entire import. Transactions, indexes and version conflicts prevent concurrent partial/duplicate imports. The frontend accepts a CSV file then sends bounded text through the authenticated API; no insecure file storage is introduced.
+
+Exports use quoted escaped cells, UTF-8 BOM and CRLF. Formula-like/control-prefixed text receives a leading apostrophe; actual numeric negative marks remain numeric. No answer keys, source, hidden tests or private transcripts enter CSV.
+
+### Actual metrics and integration
+
+Reports use finalized TestAttempts for grades; no result reads finalize attempts or call providers. Average = mean stored finalized percentages, nullable without scored records. Attempt history carries version, status and safe scalar result fields; unfinished scores stay null. Assessment completion = unique assigned published assessments with a finalized attempt / unique assigned assessments, nullable with no assignment denominator. Multiple batch membership never double counts tasks; any prior finalized version satisfies task completion, while version remains available in exported attempt history.
+
+Coding = completed scored submissions only: attempted/solved are distinct problem IDs; solve rate = solved/attempted or null. Unscored System Errors do not fabricate proficiency. Learning = current published assigned or recorded modules, intersection of saved completion IDs with current lesson IDs, unique modules/lessons; no-record assigned lessons are actual zero, missing denominator is null. Existing legacy recorded learning remains supported. Company = unique valid completed checklist keys/current published profile keys; unstarted available profiles are zero, no available denominator is null. This is explicitly self-reported preparation, not hiring readiness.
+
+Trainer reports are always limited to currently assigned Students. Batch/assessment filters are validated; Admin Trainer filter narrows to that Trainer's actual active memberships. Equivalent scope applies to exports. Published assessment metadata may be filterable without ownership, but answer-key and mutation APIs still require ownership. Batch-level aggregate reporting never exposes unrelated Students.
+
+Staff dashboards use real legacy and new batch assignment records with distinct assessment/Student task keys. Student dashboard adds actual batch assessment deadlines and learning recommendations, preserving readiness formula, saved activity and existing grading. Published resources remain browsable; assignments organize tasks rather than restrict the global published library. No fabricated activities or AI metrics are inserted.
+
+Trainer workloads show unique active assigned Students, active batches (archived history separate), owned/published content counts and real assignment definitions in active batches. Assignment/removal uses optimistic batch versions; membership is deduplicated; no password or arbitrary role field is accepted.
+
+### Files, verification and limitations
+
+Preserved Phase 1–3 controllers/pages/scope/tests and additive Batch fields. New continuation files: `controllers/staffAssessments.ts`, `staffAssignments.ts`, `staffLearning.ts`, `staffReports.ts`, `staffTrainers.ts`; `models/BatchAssignment.ts`; `services/questionCSV.ts`, `staffAssessment.ts`, `staffReports.ts`, `studentAssignments.ts`; `validators/staffAssessment.ts`; `test/staffManagement.test.ts`, `test/helpers/staffDatabase.ts`; client `components/StaffAssignments.tsx`, pages `StaffAssessments.tsx`, `StaffAssignmentDirectory.tsx`, `StaffLearningCompletion.tsx`, `StaffReports.tsx`, `StaffTrainers.tsx`. Existing staff router/dashboard, learning route/UI, assessment models/validator, Student dashboard integration, startup indexes, navigation/routes and learning test fixtures updated. Server manifest/lockfile adds only csv-parse. Documentation updated; temporary browser dependencies/helpers are outside Git.
+
+Sequential phase checks: Phase 4 **210 tests**, Phase 5 **213**, Phase 6 **217**, Phase 7 **219**, each with client/server/source-and-test TypeScript checks and both production builds. Final security review adds assignment directory scope and CSV duplicate/row-limit coverage. Final results are recorded after all checks below.
+
+Run `npm test`, `npm run typecheck`, `npm run build`. Targeted integration: `npm run test -w server -- test/staff.test.ts test/staffManagement.test.ts`. All automated databases are disposable; the management suite uses a replica set to exercise real atomic transactions. README contains the beginner-friendly actual UI workflow.
+
+Limitations: prototype scope/aggregation queries use in-memory processing; report/export selections capped at 1,000 Students, page size 25, account pickers 500. Profile history retains prior bounds. Report scores may combine finalized versions (exports expose versions); company checklists are self-reported. No in-app privileged creation/role editing, secure PDF storage or coding-problem authoring added. Live Atlas/OpenAI/Judge0 verification remains pending where previously documented. Monaco retains its existing lazy chunk advisory. No production data, paid service, commit or push is involved.
+
+Final automated verification: **221 tests passed** (205 server tests in 20 files, 16 client tests in one file), no skipped tests. Client/server source and test TypeScript checks passed; both production builds passed. New tests cover staff/ownership/Student isolation, active-batch assignments, version conflicts, atomic concurrent imports, invalid/duplicate/oversized/row-limited CSV, finalized snapshot/scoring/key confidentiality, scoped completion, report/export/filter denial and formula escaping, real workload counts, and prevention of role escalation. Existing Checkpoints 1–12 and watcher regressions remain passing. `git diff --check` passed; no private environment, dependency directory, generated artifact or credential pattern was found among tracked candidates. Nothing is staged, committed or pushed.
+
+Chromium final verification passed actual Admin and Trainer login/redirects, assessment creation, downloadable template, file-based CSV import, publication, batch assignment, owned learning assignment, saved Student lesson completion, an actual finalized scored Student assessment, filtered real-result reports and both report/assessment CSV downloads. Trainer ownership and unauthorized Student/unrelated-batch export denials passed. Admin workload views and Trainer removal/restoration controls persisted through real MongoDB. Management assessment/learning/report/Trainer pages passed at **375/768/1440px** without document overflow; mobile sidebar navigation worked and no browser runtime errors occurred. Temporary randomly credentialed fixtures and a disposable replica set were used through Vite's actual API proxy; requests were paced across the unchanged API rate-limit windows. No live provider or production database was contacted.
+
+Full working-tree file inventory (includes preserved Phases 1–3):
+
+```text
+README.md
+client/src/layouts/AppLayout.tsx
+client/src/main.tsx
+client/src/pages/LearningManage.tsx
+docs/CHECKPOINTS.md
+docs/IMPLEMENTATION.md
+package-lock.json
+server/package.json
+server/src/app.ts
+server/src/index.ts
+server/src/models/Assessment.ts
+server/src/models/Batch.ts
+server/src/routes/learning.ts
+server/src/services/dashboard.ts
+server/src/validators/assessment.ts
+server/test/learning.test.ts
+client/src/components/StaffAssignments.tsx
+client/src/hooks/useStaffData.ts
+client/src/pages/StaffAssessments.tsx
+client/src/pages/StaffAssignmentDirectory.tsx
+client/src/pages/StaffBatches.tsx
+client/src/pages/StaffDashboard.tsx
+client/src/pages/StaffLearningCompletion.tsx
+client/src/pages/StaffReports.tsx
+client/src/pages/StaffStudents.tsx
+client/src/pages/StaffTrainers.tsx
+server/src/controllers/staffAssessments.ts
+server/src/controllers/staffAssignments.ts
+server/src/controllers/staffBatches.ts
+server/src/controllers/staffDashboard.ts
+server/src/controllers/staffLearning.ts
+server/src/controllers/staffReports.ts
+server/src/controllers/staffStudents.ts
+server/src/controllers/staffTrainers.ts
+server/src/models/BatchAssignment.ts
+server/src/routes/staff.ts
+server/src/services/questionCSV.ts
+server/src/services/staffAssessment.ts
+server/src/services/staffReports.ts
+server/src/services/staffScope.ts
+server/src/services/studentAssignments.ts
+server/src/validators/staff.ts
+server/src/validators/staffAssessment.ts
+server/test/helpers/staffDatabase.ts
+server/test/staff.test.ts
+server/test/staffManagement.test.ts
+```

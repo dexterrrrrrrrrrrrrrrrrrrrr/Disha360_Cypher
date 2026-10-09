@@ -1,3 +1,4 @@
+import { staffScope } from "../services/staffScope.js";
 import { Router } from "express";
 import { z } from "zod";
 import { databaseStatus } from "../config/database.js";
@@ -169,7 +170,14 @@ export function learningRoutes(origin: string, status = databaseStatus) {
   });
   r.get("/manage/modules/:id/progress", staff, async (req, res) => {
     const m = await owned(req.params.id, req.user!);
-    const records = await LearningProgress.find({ moduleId: m._id })
+    const scope = await staffScope(
+      req.user!,
+      !!req.app.locals.allowDemoAccounts,
+    );
+    const records = await LearningProgress.find({
+      moduleId: m._id,
+      studentId: { $in: scope.studentIds },
+    })
       .populate<{
         studentId: { _id: unknown; name: string; department?: string };
       }>({ path: "studentId", select: "name department" })
@@ -190,7 +198,8 @@ export function learningRoutes(origin: string, status = databaseStatus) {
               p as unknown as InstanceType<typeof LearningProgress>,
             ),
           })),
-        scope: "Progress for this authorized module; latest 200 records.",
+        scope:
+          "Progress for authorized students in this module; latest 200 records.",
       },
     });
   });

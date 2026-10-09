@@ -1,3 +1,5 @@
+import { StaffAssignments } from "../components/StaffAssignments";
+import { StaffLearningCompletion } from "./StaffLearningCompletion";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../features/auth/AuthProvider";
@@ -302,7 +304,7 @@ export function LearningEditor() {
                   <label>
                     <span className="field-label">Content type</span>
                     <select
-            aria-label="Content type"
+                      aria-label="Content type"
                       className="input"
                       value={l.kind}
                       onChange={(e) =>
@@ -410,6 +412,12 @@ export function LearningEditor() {
             </div>
           </fieldset>
         </form>
+      )}
+      {!isNew && !loading && (
+        <>
+          <StaffAssignments kind="learning" id={id!} published={published} />
+          <StaffLearningCompletion id={id!} />
+        </>
       )}
       {progress && (
         <section className="card mt-6 overflow-x-auto">

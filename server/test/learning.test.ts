@@ -1,3 +1,4 @@
+import { Batch, Enrollment } from "../src/models/Batch.js";
 import { beforeAll, beforeEach, afterAll, it, expect } from "vitest";
 import request from "supertest";
 import {
@@ -57,6 +58,14 @@ async function setup() {
     student = await studentAccount();
   const response = await call(trainer.cookie, "post", "/manage/modules", input);
   expect(response.status).toBe(201);
+  const assignedBatch = await Batch.create({
+    name: "Learning test batch",
+    trainerIds: [trainer.user._id],
+  });
+  await Enrollment.create({
+    batchId: assignedBatch._id,
+    studentId: student.user._id,
+  });
   return { trainer, student, module: response.body.data.module };
 }
 it("allows trainer ownership and admin access, denies students and other trainers", async () => {

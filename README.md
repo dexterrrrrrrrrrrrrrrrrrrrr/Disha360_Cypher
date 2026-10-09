@@ -136,7 +136,7 @@ curl -i http://localhost:4000/api/v1/auth/me # 401 when no cookie is supplied
 
 `client/src/features/auth` contains session state and protected routing; `layouts/AuthLayout.tsx` preserves the shared sign-in design. Backend modules separate models, validators, services, controllers, middleware, routes, and operator utilities. npm workspaces keep installation simple.
 
-Checkpoints 1–4, 7 and 8 are implemented; Checkpoints 5–6 await live provider verification. Coding workspace/judge (9–10) are implemented with live-provider verification pending. Checkpoint 12 company preparation is now implemented; Checkpoints 13–15 remain out of scope. Your locally verified Atlas connection was not re-tested here because its credentials are not available in this cloud runtime. The auth flows were verified using an isolated actual MongoDB server. See [docs/CHECKPOINTS.md](docs/CHECKPOINTS.md) for status.
+Checkpoints 1–4, 7 and 8 are implemented; Checkpoints 5–6 await live provider verification. Coding workspace/judge (9–10) are implemented with live-provider verification pending. Checkpoint 12 company preparation is now implemented; Checkpoint 14 management is implemented below; Checkpoints 13 and 15 remain out of scope. Your locally verified Atlas connection was not re-tested here because its credentials are not available in this cloud runtime. The auth flows were verified using an isolated actual MongoDB server. See [docs/CHECKPOINTS.md](docs/CHECKPOINTS.md) for status.
 
 ## Student preparation features (Checkpoints 2–8)
 
@@ -208,7 +208,7 @@ npm run dev
 2. Open Assessments. Development samples are explicitly labeled. Filter each category and review instructions/scoring. Start a test, answer, navigate and reload: saved selection, question order, option order and timer persist. Use Review unanswered and clear an answer. Submit early, accept the unanswered warning and inspect the score explanation and per-question answer review. Reload and reopen history: the result is unchanged.
 3. Start another attempt and let its displayed timer expire (samples are five minutes). Saved answers are automatically finalized, further editing is disabled, and closing/reopening the tab does not extend time. Repeated result visits do not duplicate completion activities. Each sample permits three attempts.
 4. Open Insights: compare metrics/history against your actual results. After only one attempt, topic interpretations are insufficient evidence. More questions alone do not bypass the distinct-attempt/unique-question thresholds. Check Overview's assessment average, unchanged readiness formula, recent activity and recommended actions.
-5. Batch comparison remains unavailable until an operator supplies **real** Batch/Enrollment data and at least three other members complete the same assessment version and exact question set. Full batch-management UI is deliberately reserved for Checkpoint 14. No other student's individual performance is exposed.
+5. Batch comparison remains unavailable until an operator supplies **real** Batch/Enrollment data and at least three other members complete the same assessment version and exact question set. Use the Checkpoint 14 Admin batch UI described below to manage real memberships. No other student's individual performance is exposed.
 6. For feedback, privately configure `OPENAI_API_KEY` and an accessible `OPENAI_MODEL` in **server/.env**, with billing/model access; restart development. Start an interview, answer with concrete evidence, complete it and wait for the report. Inspect quoted evidence and AI-estimate labeling; reload and reopen from history. Unsupported technical competencies may be unassessed. Without a key, the application explicitly shows AI/feedback unavailable.
 7. Sign out and verify private routes require login. Sign in as another Student and try the first student's attempt/interview URL: access must fail. Trainer/Admin accounts cannot access student APIs. Verify mobile/tablet navigation, assessments, insights and reports.
 8. Verify backend health/readiness at `http://localhost:4000/api/v1/health` and `/api/v1/ready`. Tests use disposable MongoDB, not Atlas. For exact API bodies, scoring/analytics formulas and limitations, see [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md).
@@ -257,7 +257,7 @@ Dashboard coding metrics count actual judged submissions and distinct attempted/
 
 ### Learning publishing and consumption
 
-Sign in as a securely provisioned Trainer/Admin and open Learning content. Create a draft with subject/topic, description/objectives, text lessons or HTTPS resources. Save; publish the saved module; edit and save changes; view student progress; unpublish. Trainers can manage only modules they own, including participant progress for those modules. Admins can manage all modules. No batch-management or unrelated Checkpoint 14 interface was added.
+Sign in as a securely provisioned Trainer/Admin and open Learning content. Create a draft with subject/topic, description/objectives, text lessons or HTTPS resources. Save; publish the saved module; edit and save changes; view student progress; unpublish. Trainers can manage only modules they own and view progress only for their currently assigned Students. Admins can manage all modules. That Checkpoints 9–11 delivery did not add batch management; the later Checkpoint 14 increment below adds batches and Student profiles.
 
 Sign in as a Student and open `/learning`. Filter by subject/topic/completion, open a published module, navigate lessons, mark complete/incomplete, reload and resume. Completion IDs and last visited lesson persist privately; duplicate completion requests create no duplicate progress/activity. Progress percentages use the current published lesson set, so removing lessons/unpublishing updates dashboard evidence. Text is escaped, not rendered as HTML; links require external HTTPS without credentials/local or IP hosts. The backend never fetches resource URLs.
 
@@ -428,10 +428,10 @@ Open `http://localhost:5173/login`. If already signed in, use **Sign out** first
 | Account | Login with | Expected landing page | Working staff navigation |
 |---|---|---|---|
 | Student | Your registered student email/password | `/dashboard/student` | Student preparation modules |
-| Trainer | The Trainer email/password you selected | `/dashboard/trainer` | Learning content → `/learning/manage/trainer` |
-| Admin | The Admin email/password you selected | `/dashboard/admin` | Learning content → `/learning/manage/admin` |
+| Trainer | The Trainer email/password you selected | `/dashboard/trainer` | Assigned batches, Student directory, Learning content |
+| Admin | The Admin email/password you selected | `/dashboard/admin` | Institution overview, Batches & students, Student directory, Learning content |
 
-Refresh after logging in: the session should persist. Staff dashboard metrics and batch/account/report management remain placeholders; those features belong to later checkpoints. Use **Learning content** to test implemented staff functionality.
+Refresh after logging in: the session should persist. Staff dashboards, batch management and the scoped student directory are now functional in the Checkpoint 14 increment described below. Assessment authoring, assignments, reports and Trainer workloads are now available. Existing **Learning content** remains available.
 
 - As a Student, visit `/dashboard/admin` or `/learning/manage/trainer`: the frontend redirects to `/dashboard/student`; the corresponding protected backend endpoints deny access.
 - As a Trainer, visit `/dashboard/admin`: return to `/dashboard/trainer`. Create a learning draft, save and publish it. A Trainer can manage only their own modules; attempting another Trainer's module is denied.
@@ -446,3 +446,48 @@ If login fails, confirm the backend and provisioning command use the same `serve
 `npm test` now runs both existing backend integration tests and client component tests. `npm run typecheck` checks client source/tests and server source/tests. `npm run build` builds both production targets. Client tests exercise the actual Login and ProtectedRoute components; the router navigation boundary is instrumented to assert redirects without introducing a browser dependency. Backend tests execute both actual npm provisioning entry points, test all role logins and permissions, prevent public role injection/promotion, reject unsafe development destinations and preserve existing accounts. No production login or dashboard implementation was replaced.
 
 Final follow-up verification: **183 tests passed** (167 backend in 18 files, 16 client component tests in one file), client/server/source-and-test TypeScript checks passed, and both production builds passed. Chromium with disposable MongoDB verified Student registration/login, actual Trainer/Admin accounts provisioned through the guarded npm command, role-specific landing/refresh, wrong-role redirects, authorized Learning content navigation, backend role denial and logout. No browser runtime errors occurred. New command-level tests have explicit longer timeouts for their nested npm subprocesses; no assertions were skipped. No live Atlas or provider access was used. Existing staff dashboard placeholders and the Monaco chunk-size advisory remain. No additional checkpoints are implemented; this verification report was recorded before the approved commit/push.
+
+## Trainer/Admin management — Checkpoint 14
+
+The existing Phases 1–3 are preserved. Assessment authoring, batch assignments, reporting and Trainer workloads extend the same authentication, models and Disha360 interface.
+
+- **Admin:** real institution dashboard, batch creation/edit/archive, Student memberships, all assessment/learning management, institution reports and Trainer workload/assignment controls.
+- **Trainer:** actual assigned-batch dashboard and Student directory, own assessment/question and learning content management, assignments to active authorized batches and reports for assigned Students only.
+- **Students:** existing published assessments and lessons remain available. Batch assignments feed actual upcoming tasks and recommended actions. No grading, readiness formula, judging or authentication rewrite.
+- Working navigation includes Questions & tests, Assignments, Learning content, Reports & analytics, and Admin Trainers & accounts. Empty data stays empty; no metrics are invented.
+
+No public privileged signup or role-edit endpoint is added. Reuse `npm run user:create -- --development` with the private configuration instructions above. No new environment variables or paid services. The only added application dependency is `csv-parse` for validated CSV input.
+
+### Local verification
+
+```bash
+npm ci
+npm test
+npm run typecheck
+npm run build
+npm run dev
+```
+
+1. Configure private `server/.env` with your development **MongoDB Atlas URI or replica-set URI**. Transactions are required for atomic question imports/edits and assignments. Standalone MongoDB receives a clear setup error rather than partial writes. Never use production data for manual testing.
+2. Provision a Trainer and Admin securely; register two Students. Sign in at `http://localhost:5173/login`. As Admin create an active batch, assign the Trainer and add one Student. Search the Student directory and verify new profiles show missing evidence honestly.
+3. Open **Questions & tests → Create assessment**. Save title, instructions, category, duration (seconds), scoring/penalty, attempt limit and question count. Add four-option questions, edit/delete while draft, or download the CSV template and import it. Invalid or duplicate rows reject the whole import. Publish only after the configured question pool is sufficient.
+4. Assign the published assessment to the active batch and choose a task due date. This date organizes upcoming work; the assessment duration and opening/closing window still govern attempts on the backend. Existing attempts retain immutable question/scoring snapshots when staff unpublish or edit later drafts.
+5. As Trainer create and publish an owned learning module, assign it to your batch and open its completion table. As Student complete a lesson and an assessment, refresh, then return to Trainer reports to verify actual persisted results. Unrelated Students/batches are inaccessible to Trainer staff APIs; Students cannot access staff APIs or answer keys.
+6. Open **Reports & analytics**, filter by batch/assessment (Admin may also filter Trainer), and export CSV. Assessment detail also exports attempt results. Scores are blank with no scored evidence, distinct from real zero. Company completion is explicitly a self-reported checklist, not a readiness score.
+7. As Admin open **Trainers & accounts**: inspect unique Student counts, active/archived batches, owned content and assignment workloads. Assign/remove a Trainer and verify access is revoked immediately when no other active assigned batch grants scope. Archived batches cannot receive new assignments.
+8. Test mobile sidebar and pages at phone/tablet/desktop widths. Verify publication, saved progress, reports and CSV downloads after refresh.
+
+CSV columns (exact order):
+
+```csv
+prompt,topic,difficulty,option_a,option_b,option_c,option_d,correct_option,explanation,expected_seconds
+"What is 2 + 2?",Arithmetic,easy,1,4,3,5,b,"Two plus two equals four.",60
+```
+
+`difficulty` is `easy`, `medium` or `hard`; `correct_option` is `a`, `b`, `c` or `d`. Use four distinct options. Import is limited to 50,000 UTF-8 bytes and 100 rows; question pools are capped at 200. All rows validate before transactional insertion. Duplicate normalized prompts, stale edits or malformed files fail without partial questions. CSV exports escape formula-like text cells.
+
+Limitations: reports cap each filtered export at 1,000 Students (narrow filters if exceeded); UI pages show 25. Prototype scopes/aggregations operate in memory. Existing account pickers cap matches at 500. Published resources remain browsable beyond batch assignments. Legacy ownerless assessments are Admin-only; shared legacy questions are copied on editing and detached on deletion. No new PDF upload or in-app privileged provisioning is claimed. Live Atlas/OpenAI/Judge0 verification remains separate from disposable-database testing. Checkpoints 13 and 15 remain untouched.
+
+See [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md) for APIs, models, calculations, permissions and final verification results.
+
+Final verification: **221 tests passed**, all client/server/source-and-test TypeScript checks and both production builds passed. Chromium verified actual authoring/import/assignment/completion/report/export/workload workflows and 375/768/1440px management layouts/mobile navigation with no runtime errors or overflow. Security tests verify backend scopes and protected answer keys. No production database or live provider was contacted; nothing is committed or pushed.

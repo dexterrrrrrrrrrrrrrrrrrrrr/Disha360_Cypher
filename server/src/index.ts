@@ -1,61 +1,114 @@
-import { Company, CompanyProgress } from './models/Company.js';
-import { LearningModule } from './models/LearningModule.js';
-import { CodingProblem } from './models/CodingProblem.js';
-import { CodingSubmission } from './models/CodingSubmission.js';
-import { Judge0Provider } from './services/codeExecution.js';
-import { CodeDraft } from './models/CodeDraft.js';
-import { env } from './config/env.js';
-import { connectDatabase, disconnectDatabase } from './config/database.js';
-import { createApp } from './app.js';
-import { User } from './models/User.js';
-import { Session } from './models/Session.js';
-import { Activity, LearningProgress, AssessmentAssignment } from './models/Preparation.js';
-import { Resume } from './models/Resume.js';
-import { ResumeAnalysis } from './models/ResumeAnalysis.js';
-import { InterviewSession } from './models/InterviewSession.js';
-import { OpenAIInterviewProvider } from './services/interviewProvider.js';
-import { InterviewFeedback } from './models/InterviewFeedback.js';
-import { Question, Assessment, TestAttempt } from './models/Assessment.js';
-import { sweepExpiredAttempts } from './services/assessments.js';
-import { databaseStatus } from './config/database.js';
-import { Batch, Enrollment } from './models/Batch.js';
+import { BatchAssignment } from "./models/BatchAssignment.js";
+import { Company, CompanyProgress } from "./models/Company.js";
+import { LearningModule } from "./models/LearningModule.js";
+import { CodingProblem } from "./models/CodingProblem.js";
+import { CodingSubmission } from "./models/CodingSubmission.js";
+import { Judge0Provider } from "./services/codeExecution.js";
+import { CodeDraft } from "./models/CodeDraft.js";
+import { env } from "./config/env.js";
+import { connectDatabase, disconnectDatabase } from "./config/database.js";
+import { createApp } from "./app.js";
+import { User } from "./models/User.js";
+import { Session } from "./models/Session.js";
+import {
+  Activity,
+  LearningProgress,
+  AssessmentAssignment,
+} from "./models/Preparation.js";
+import { Resume } from "./models/Resume.js";
+import { ResumeAnalysis } from "./models/ResumeAnalysis.js";
+import { InterviewSession } from "./models/InterviewSession.js";
+import { OpenAIInterviewProvider } from "./services/interviewProvider.js";
+import { InterviewFeedback } from "./models/InterviewFeedback.js";
+import { Question, Assessment, TestAttempt } from "./models/Assessment.js";
+import { sweepExpiredAttempts } from "./services/assessments.js";
+import { databaseStatus } from "./config/database.js";
+import { Batch, Enrollment } from "./models/Batch.js";
 
 if (env.MONGODB_URI) {
   try {
     await connectDatabase(env.MONGODB_URI);
     // Explicitly ensure unique and TTL indexes, even when production autoIndex is disabled.
-    await Promise.all([Company.createIndexes(), CompanyProgress.createIndexes()]);
+    await Promise.all([
+      Company.createIndexes(),
+      CompanyProgress.createIndexes(),
+    ]);
     await LearningModule.createIndexes();
+    await BatchAssignment.createIndexes();
     await CodeDraft.createIndexes();
-    await Promise.all([CodingProblem.createIndexes(), CodingSubmission.createIndexes()]);
+    await Promise.all([
+      CodingProblem.createIndexes(),
+      CodingSubmission.createIndexes(),
+    ]);
     await User.createIndexes();
     await Session.createIndexes();
-    await Promise.all([Activity.createIndexes(), LearningProgress.createIndexes(), AssessmentAssignment.createIndexes()]);
+    await Promise.all([
+      Activity.createIndexes(),
+      LearningProgress.createIndexes(),
+      AssessmentAssignment.createIndexes(),
+    ]);
     await Resume.createIndexes();
     await ResumeAnalysis.createIndexes();
     await InterviewSession.createIndexes();
     await InterviewFeedback.createIndexes();
-    await Promise.all([Question.createIndexes(), Assessment.createIndexes(), TestAttempt.createIndexes()]);
+    await Promise.all([
+      Question.createIndexes(),
+      Assessment.createIndexes(),
+      TestAttempt.createIndexes(),
+    ]);
     await Promise.all([Batch.createIndexes(), Enrollment.createIndexes()]);
-    console.log('MongoDB connected.');
-  }
-  catch {
+    console.log("MongoDB connected.");
+  } catch {
     await disconnectDatabase();
-    console.error('MongoDB connection failed. Check the Atlas host, database user, and network access. Credentials are omitted from logs.');
-    if (env.NODE_ENV === 'production') process.exit(1);
+    console.error(
+      "MongoDB connection failed. Check the Atlas host, database user, and network access. Credentials are omitted from logs.",
+    );
+    if (env.NODE_ENV === "production") process.exit(1);
   }
-} else console.warn('MONGODB_URI is not configured. Authentication and persistence are unavailable; health endpoints remain available.');
+} else
+  console.warn(
+    "MONGODB_URI is not configured. Authentication and persistence are unavailable; health endpoints remain available.",
+  );
 
-const app = createApp({ executionProvider: env.JUDGE0_URL && env.JUDGE0_SECURITY_CONFIRMED ? new Judge0Provider(env.JUDGE0_URL, env.JUDGE0_API_KEY) : undefined, clientOrigin: env.CLIENT_ORIGIN, databaseConfigured: Boolean(env.MONGODB_URI), secureCookies: env.NODE_ENV === 'production', trustProxy: env.TRUST_PROXY, allowDemoAccounts: env.NODE_ENV === 'development', interviewProvider: env.OPENAI_API_KEY ? new OpenAIInterviewProvider(env.OPENAI_API_KEY, env.OPENAI_MODEL) : undefined });
-const server = app.listen(env.PORT, '0.0.0.0', () => console.log(`Disha360 API listening on port ${env.PORT}`));
+const app = createApp({
+  executionProvider:
+    env.JUDGE0_URL && env.JUDGE0_SECURITY_CONFIRMED
+      ? new Judge0Provider(env.JUDGE0_URL, env.JUDGE0_API_KEY)
+      : undefined,
+  clientOrigin: env.CLIENT_ORIGIN,
+  databaseConfigured: Boolean(env.MONGODB_URI),
+  secureCookies: env.NODE_ENV === "production",
+  trustProxy: env.TRUST_PROXY,
+  allowDemoAccounts: env.NODE_ENV === "development",
+  interviewProvider: env.OPENAI_API_KEY
+    ? new OpenAIInterviewProvider(env.OPENAI_API_KEY, env.OPENAI_MODEL)
+    : undefined,
+});
+const server = app.listen(env.PORT, "0.0.0.0", () =>
+  console.log(`Disha360 API listening on port ${env.PORT}`),
+);
 let sweeping = false;
-const expiryWorker = setInterval(() => { if (sweeping || databaseStatus() !== 'connected') return; sweeping = true; void sweepExpiredAttempts().catch(() => console.error('Assessment expiry sweep failed; retrying later.')).finally(() => { sweeping = false; }); }, 5000);
+const expiryWorker = setInterval(() => {
+  if (sweeping || databaseStatus() !== "connected") return;
+  sweeping = true;
+  void sweepExpiredAttempts()
+    .catch(() =>
+      console.error("Assessment expiry sweep failed; retrying later."),
+    )
+    .finally(() => {
+      sweeping = false;
+    });
+}, 5000);
 expiryWorker.unref();
 async function shutdown() {
   clearInterval(expiryWorker);
   const forceExit = setTimeout(() => process.exit(1), 10000);
   forceExit.unref();
-  server.close(async () => { await disconnectDatabase(); clearTimeout(forceExit); process.exit(0); });
+  server.close(async () => {
+    await disconnectDatabase();
+    clearTimeout(forceExit);
+    process.exit(0);
+  });
 }
-process.on('SIGINT', shutdown);
-process.on('SIGTERM', shutdown);
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
