@@ -1,0 +1,2 @@
+export interface InterviewSession { id: string; type: 'technical' | 'behavioral' | 'hr'; difficulty: 'beginner' | 'intermediate' | 'advanced'; targetRole: string; focus: string; questionLimit: number; status: 'active' | 'completed'; messages: { role: 'interviewer' | 'student'; text: string; at: string }[]; provider: string; version: number; createdAt: string; updatedAt: string; completedAt?: string; answerCount: number }
+export interface InterviewConfig { configured: boolean; provider: string | null; message: string }

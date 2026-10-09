@@ -1,44 +1,38 @@
 # Checkpoint status
 
-Project foundation is complete. **Checkpoint 1: authentication and role-based access is complete.** Other checkpoint statuses describe the full feature, not the visual shell.
+Checkpoints 2–5 were developed sequentially on the existing Disha360 foundation. Checkpoint 1 authentication is preserved. “Complete” means the relevant local functionality was implemented and verified; external-service verification is called out explicitly.
 
-| # | Checkpoint | Status | Current scope / remaining work |
+| # | Checkpoint | Status | Implemented scope / remaining work |
 |---|---|---|---|
-| 1 | Authentication and role-based access | Complete | Student registration; all-role login; scrypt hashes; MongoDB-backed cookie sessions; protected routes; backend role checks; secure provisioning and development-only demo seeding; verified tests. |
-| 2 | Student dashboard | Not started | Layout preview only; persistent preparation progress, scores, tasks, and activity remain. |
-| 3 | Resume builder | Not started | Editable sections, preview, persistence, and PDF export. |
-| 4 | Resume analyzer | Not started | Resume input, provider interface, suggestions, and labeled fallback. |
-| 5 | AI mock interviewer | Not started | Questions, answer capture, sessions, and provider integration. |
-| 6 | Interview feedback report | Not started | Stored strengths and improvement areas using actual answers. |
-| 7 | Timed randomized MCQ tests | Not started | Secure question delivery, timing, submission, scoring, and attempts. |
-| 8 | MCQ performance analytics | Not started | Topic-level performance from actual attempts. |
-| 9 | Multilanguage coding editor | Not started | Python, Java, C++, and JavaScript editor. |
-| 10 | Coding auto-judge | Not started | Trusted external judge or isolated execution; protect hidden cases. |
-| 11 | Learning modules and materials | Not started | Persistent content, permitted file storage, publishing, and progress. |
-| 12 | Company-wise preparation | Not started | Company topics, practice, and interview resources. |
-| 13 | Leaderboard and achievements | Not started | Persistent points, badges, and achievements. |
-| 14 | Trainer/Admin management | Not started | Staff layout previews only; account/batch/content/assessment management and exports remain. |
-| 15 | Responsive usable UI | In progress | Responsive foundation shell and login implemented; all future feature screens and accessibility checks remain. |
+| 1 | Authentication and role-based access | Complete | Existing Student-only registration, all-role login, secure hashes/sessions, authorization and operator provisioning preserved; all 38 auth tests still pass. |
+| 2 | Student dashboard | Complete | Personalized actual MongoDB records, transparent readiness estimate, learning completion, scored assessment average, pending assessments, UTC daily streak, saved activity, resume/interview next actions, responsive navigation. No fabricated performance. Learning/assessment delivery remains Checkpoints 7/11; until records exist those areas show honest empty states. |
+| 3 | Resume builder | Complete | Private saved structured drafts; all seven requested section groups; three templates; live preview; explicit save/edit/delete; version conflicts; server PDF export; ownership/persistence/PDF tests and Chromium flows verified. |
+| 4 | ATS resume analyzer | Complete | Deterministic job-description keyword extraction/coverage, section checks, achievement evidence, transparent score breakdown, suggestions and persisted snapshot/history. Explicitly a heuristic, not an employer ATS score; no random scoring or AI requirement. |
+| 5 | AI mock interviewer | Blocked | Backend OpenAI Responses integration, setup/type/difficulty, contextual follow-ups, saved transcripts/history, resume/complete workflows, loading/errors, concurrency recovery, optional speech and text fallback implemented. Local MongoDB, provider protocol and browser workflows verified with explicitly labeled test fixtures. Live AI verification is blocked by absent OPENAI_API_KEY/billing/model access in this runtime. Set a private key locally and follow README to verify real generation before marking Complete. |
+| 6 | Interview feedback report | Not started | No scoring, strengths/weaknesses report or feedback generation added. |
+| 7 | Timed randomized MCQ tests | Not started | No test delivery, question management, timing or scoring APIs added. Dashboard only consumes recorded assignment/results evidence. |
+| 8 | MCQ performance analytics | Not started | No topic-wise attempt analytics added. |
+| 9 | Multilanguage coding editor | Not started | No editor added. |
+| 10 | Coding auto-judge | Not started | No code execution added. |
+| 11 | Learning modules and materials | Not started | No content creation, file upload, publishing or lesson-completion APIs added. Dashboard only consumes recorded learning progress. |
+| 12 | Company-wise preparation | Not started | No company content added. |
+| 13 | Leaderboard and achievements | Not started | No points, badges or leaderboard added. |
+| 14 | Trainer/Admin management | Not started | Existing role-protected placeholders preserved; no staff management feature added. |
+| 15 | Responsive usable UI | In progress | Responsive authentication, dashboard, resume/analyzer/interview screens verified at desktop/tablet/mobile; future checkpoint screens remain. |
 
-## Foundation validation
+## Sequential verification
 
-- React, Vite, TypeScript, Tailwind client and TypeScript Express server scaffolded.
-- Health, readiness, environment validation, safe errors, and MongoDB connection lifecycle implemented.
-- Root install/dev/typecheck/test/build scripts supplied.
-- Cloud Atlas connectivity requires an actual URI and permitted network access; the user verified Atlas locally.
-- Authentication uses real MongoDB persistence. Dashboard learning metrics remain explicit placeholders.
+| Phase | TypeScript checks | Automated tests | Production builds |
+|---|---|---|---|
+| 1 — Dashboard | Client/server/test types passed | 56 passed | Server and client passed |
+| 2 — Resume builder | Client/server/test types passed | 60 passed | Server and client passed |
+| 3 — ATS analyzer | Client/server/test types passed | 64 passed | Server and client passed |
+| 4 — Interview integration / final | Client/server/test types passed | 83 passed, 10 files | Server and client passed |
 
-### Verified in the current environment
+Tests launch a real isolated MongoDB 7.0.24 process. They never use Atlas or a real AI key. The existing watcher regression still verifies relevant source edits/additions/deletions restart the server while dependencies/build/log/temp changes do not. No watcher rewrite was necessary.
 
-- `npm run typecheck`: both workspaces passed.
-- `npm test`: 49 tests passed across authentication, authorization, operator commands, API behavior, and environment validation using a real disposable MongoDB server.
-- `npm run build`: backend compilation and frontend production build passed.
-- Real HTTP requests: API health returned 200, database readiness returned the expected 503 without configuration, and the frontend's `/api` proxy worked.
-- Chromium smoke checks: registration, validation, all-role login, protected role navigation, reload persistence, logout, HttpOnly cookies, no localStorage tokens, and mobile/tablet layouts. No browser runtime errors were observed. This was a one-off environment check, not a committed frontend test suite.
-- Atlas connectivity was reported verified by the user locally; no Atlas credentials were supplied to this runtime. Authentication was verified against isolated MongoDB. No Checkpoint 2 workflows were implemented.
+Chromium checks exercised actual HTTP requests through Vite's `/api` proxy: Student registration/login persistence, dashboard empty states, saved resume reload, PDF download, analyzer/history, responsive navigation, AI setup-required/disabled start, and interview text-chat workflows with an explicitly labeled local Responses protocol fixture. PDF text extraction confirmed exported content. Real microphone/speech-network services were not exercised.
 
-Stop after Checkpoint 1. Continue to Checkpoint 2 only after the next explicit instruction.
+Atlas was previously verified locally by the user. No Atlas or live OpenAI credentials are available in this cloud environment, so neither was re-tested here. Checkpoint 5 remains Blocked for live-provider verification. No secrets or generated dependencies were added to Git. Final pre-push review confirmed all 83 tests and production builds pass, authentication is preserved, and credentials/generated files are excluded.
 
-## Checkpoint 1 security and scope
-
-Public registration cannot create staff accounts. Passwords and session tokens are never returned by profile APIs; only hashed values are persisted. Sessions expire after seven days and logout revokes them. State-changing auth requests enforce a custom CSRF header and the configured Origin. Role checks are server-side. No arbitrary student-profile endpoint or user-list API is exposed. Development demo accounts are rejected in production. Staff provisioning requires operator access and does not overwrite existing accounts. No preparation progress, scores, tasks, or learning activity APIs have been added.
+See [IMPLEMENTATION.md](IMPLEMENTATION.md) and [../README.md](../README.md) for API/models, configuration, limitations and manual verification.

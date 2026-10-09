@@ -39,7 +39,7 @@ it('watches backend TypeScript only, ignoring imported dependencies and generate
     ];
     for (const name of ignored) await put(name);
     watcher = spawn(process.execPath, [join(root, 'node_modules/nodemon/bin/nodemon.js'), '--config', join(root, 'server/nodemon.json')], {
-      cwd: fixture, env: { ...process.env, PATH: `${join(root, 'node_modules/.bin')}${delimiter}${process.env.PATH || ''}` }, stdio: ['ignore', 'pipe', 'pipe']
+      cwd: fixture, detached: process.platform !== 'win32', env: { ...process.env, PATH: `${join(root, 'node_modules/.bin')}${delimiter}${process.env.PATH || ''}` }, stdio: ['ignore', 'pipe', 'pipe']
     });
     watcher.stdout!.on('data', chunk => { output += chunk.toString(); });
     watcher.stderr!.on('data', chunk => { output += chunk.toString(); });
@@ -59,9 +59,15 @@ it('watches backend TypeScript only, ignoring imported dependencies and generate
   } finally {
     if (watcher && watcher.exitCode === null) {
       await new Promise<void>(resolve => {
-        const forceKill = setTimeout(() => watcher!.kill('SIGKILL'), 3000);
+        // Terminate the whole fixture process group, including tsx and its child.
+        // Killing only Nodemon leaves test programs running after their files vanish.
+        const stop = (signal: NodeJS.Signals) => {
+          try { if (process.platform !== 'win32' && watcher!.pid) process.kill(-watcher!.pid, signal); else watcher!.kill(signal); }
+          catch (error) { if (!(error instanceof Error && 'code' in error && error.code === 'ESRCH')) throw error; }
+        };
+        const forceKill = setTimeout(() => stop('SIGKILL'), 3000);
         watcher!.once('exit', () => { clearTimeout(forceKill); resolve(); });
-        watcher!.kill('SIGTERM');
+        stop('SIGTERM');
       });
     }
     await rm(fixture, { recursive: true, force: true });

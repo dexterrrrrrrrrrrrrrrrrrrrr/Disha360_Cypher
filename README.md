@@ -1,6 +1,6 @@
 # Disha360 Placement Training LMS
 
-A placement training LMS built with React, Vite, TypeScript, Tailwind, Express, and MongoDB. **Checkpoint 1 implements authentication and role-based access.** Preparation metrics and all learning activities remain placeholders for later checkpoints. The existing design system and project structure are preserved.
+A placement training LMS built with React, Vite, TypeScript, Tailwind, Express, and MongoDB. **Checkpoints 1–4 are implemented and verified.** Checkpoint 5 has a real OpenAI integration and tested session workflows; live AI verification requires backend credentials. The student dashboard reads actual MongoDB records and shows empty states when performance evidence is absent. The existing design system and project structure are preserved.
 
 ## Install and run
 
@@ -27,13 +27,13 @@ The API development process uses Nodemon with `server/nodemon.json` to watch onl
 
 Follow [docs/MONGODB_ATLAS.md](docs/MONGODB_ATLAS.md). Create an Atlas database user with read/write permission to `cypher`, permit the backend machine's outbound IP, and put the Atlas-supplied URI in **server/.env**. Use a separate development database for demo users. `npm run db:check` connects and sends a read-only ping without printing credentials.
 
-Without a connected database, health remains available but auth endpoints return 503. No fallback accounts or in-memory session storage are used. Startup explicitly creates the User unique-email and Session unique-token/TTL indexes. Production refuses startup if database connection or index preparation fails. Development retains the server with the database disconnected. Sessions and users persist in MongoDB Atlas; only tests use disposable MongoDB instances.
+Without a connected database, health remains available but private feature endpoints return 503. No fallback accounts or in-memory session storage are used. Startup explicitly creates the User unique-email, Session unique-token/TTL, and student-feature indexes. Production refuses startup if database connection or index preparation fails. Development retains the server with the database disconnected. Sessions and users persist in MongoDB Atlas; only tests use disposable MongoDB instances.
 
 ## Authentication
 
 - `/register`: Student-only registration with name, email, password, department, and semester (1–12). Passwords require 12–128 characters, uppercase, lowercase, and a number. Registration signs the student in.
 - `/login`: One sign-in form for Student, Trainer, and Admin. The stored account role determines the workspace; users cannot pick or promote their role.
-- `/dashboard/student`, `/dashboard/trainer`, `/dashboard/admin`: authenticated, role-protected dashboard shells. Wrong-role navigation redirects to the account's own workspace. The former public `/preview/*` routes no longer expose dashboards.
+- `/dashboard/student`, `/dashboard/trainer`, `/dashboard/admin`: authenticated, role-protected workspaces. The Student dashboard shows personal preparation records; staff dashboards remain placeholders. Wrong-role navigation redirects to the account's own workspace. The former public `/preview/*` routes no longer expose dashboards.
 - **Sign out** deletes the server session and clears the browser cookie.
 
 Passwords use Node's scrypt with random per-user salts and timing-safe comparison. Sessions are random 256-bit opaque tokens; only SHA-256 hashes are stored in MongoDB. The cookie is HttpOnly, SameSite=Lax, scoped to `/api`, and valid for seven days (fixed expiration). Production adds Secure and requires HTTPS. No authentication tokens are stored in localStorage. Expiration is checked on every private API request, even before MongoDB TTL cleanup. The client restores its session through `/auth/me` on reload and rechecks it when returning to the tab.
@@ -111,7 +111,7 @@ Tests use mongodb-memory-server to launch a **real, disposable MongoDB 7.0.24 pr
 MONGOMS_SYSTEM_BINARY=/path/to/mongod npm test
 ```
 
-In this cloud run, the verified official MongoDB image supplied `/tmp/cypher-mongodb/mongod`. MongoDB integration tests cover Student-only registration, validation, email uniqueness, hashing, login for all roles, session persistence/rotation/expiry, logout revocation, CSRF, rate limits, role denial, student privacy, secure cookie flags, demo restrictions, and operator provisioning. Disposable data is deleted after the suite. The test database is isolated from development and Atlas data.
+The official MongoDB test binary is cached under the operating system temporary directory. MongoDB integration tests cover Student-only registration, validation, email uniqueness, hashing, login for all roles, session persistence/rotation/expiry, logout revocation, CSRF, rate limits, role denial, student privacy, secure cookie flags, demo restrictions, and operator provisioning. Disposable data is deleted after the suite. The test database is isolated from development and Atlas data.
 
 ## Manual testing
 
@@ -122,7 +122,7 @@ In this cloud run, the verified official MongoDB image supplied `/tmp/cypher-mon
 5. Sign out, then revisit a private route: expect login. Try an incorrect password: expect an error.
 6. Seed the three development accounts and verify each lands in its own workspace.
 7. Confirm the session cookie is HttpOnly and no token exists in browser localStorage. Inspect API responses: no password/hash fields.
-8. Test narrow viewports and the navigation drawer. Existing dashboard data is still explicitly placeholder content.
+8. Test narrow viewports and the navigation drawer. The Student dashboard shows actual records or honest empty states, never invented scores.
 
 Backend checks:
 
@@ -136,4 +136,49 @@ curl -i http://localhost:4000/api/v1/auth/me # 401 when no cookie is supplied
 
 `client/src/features/auth` contains session state and protected routing; `layouts/AuthLayout.tsx` preserves the shared sign-in design. Backend modules separate models, validators, services, controllers, middleware, routes, and operator utilities. npm workspaces keep installation simple.
 
-Checkpoint 1 is implemented. Checkpoint 2 and all learning, assessment, resume, interview, coding, content-management, and placement features remain unimplemented. Your locally verified Atlas connection was not re-tested here because its credentials are not available in this cloud runtime. The auth flows were verified using an isolated actual MongoDB server. See [docs/CHECKPOINTS.md](docs/CHECKPOINTS.md) for status.
+Checkpoints 1–4 are implemented; Checkpoint 5 awaits live provider verification. Learning delivery, assessment taking, interview feedback reports, coding, and content management remain out of scope (Checkpoints 6–15). Your locally verified Atlas connection was not re-tested here because its credentials are not available in this cloud runtime. The auth flows were verified using an isolated actual MongoDB server. See [docs/CHECKPOINTS.md](docs/CHECKPOINTS.md) for status.
+
+## Student preparation features (Checkpoints 2–5)
+
+- **Dashboard `/dashboard/student`:** personal details, learning completion, recorded assessment average, upcoming assignments, UTC daily streak, persisted recent activity, and next actions derived from the student's resume/interview records. Readiness is an explicit estimate: 25% profile completeness + 40% recorded lesson completion + 35% recorded assessment average. Missing performance records contribute no points; their displayed metrics are blank. A new student with a complete profile has a 25% estimate, not an invented test score. Dashboard visits count as daily check-ins. No student endpoint can create learning progress or assessment scores. The systems that produce learning/assessment evidence remain later checkpoints.
+- **Resume studio `/resumes`:** private structured drafts, personal details, education, skills, projects, experience, certifications; Classic, Modern, and Compact templates; live preview; explicit save; server-generated PDF. Reload preserves saved content. Save before exporting; the PDF uses the saved version. Concurrent edits are rejected with 409 instead of overwriting a newer version. Resume lists show the latest 100 drafts.
+- **ATS analyzer `/resume-analyzer`:** select a saved resume and enter a 50–12,000-character job description. Deterministic keyword extraction, matched/missing keywords, five completeness checks, evidence checks, component breakdown and suggestions. Scores are reproducible, never random. No AI credentials are needed for this heuristic. History retains private immutable content snapshots and the rubric/version used, including after the original resume is deleted. Latest 100 results are listed.
+- **Interviews `/interviews`:** Technical, Behavioral or HR; Beginner, Intermediate or Advanced; target role, optional focus, 3–10 questions; AI-generated first questions and adaptive follow-ups; private saved transcripts, history, resumable active sessions, automatic completion or early end. The server forwards actual prior questions and answers to OpenAI. Concurrent processing uses a bounded MongoDB lease and version checks. Failed question generation leaves the transcript/version unchanged and permits retry. Text answers remain in the input after a failed request. No feedback report is generated in this checkpoint.
+
+All feature routes are protected for Students on both client and server. Ownership always comes from the authenticated session, never a submitted student ID. Cross-student record access returns 404. Private responses use `Cache-Control: no-store`; mutations require the existing CSRF header/origin checks. Inputs use Zod, records are persisted in MongoDB, and MongoDB unavailability returns a safe 503. No credentials or session tokens enter React code.
+
+### AI configuration (Checkpoint 5)
+
+In your existing **private `server/.env`**, add:
+
+```dotenv
+OPENAI_API_KEY=<your-private-openai-api-key>
+OPENAI_MODEL=gpt-4.1-mini
+```
+
+Create a project API key in the [OpenAI API platform](https://platform.openai.com/api-keys), configure API billing and model access, then restart `npm run dev`. Keep this key on the backend; never use a `VITE_` variable or paste credentials into chat. The SDK uses the Responses API, structured JSON output, a 60-second timeout, no automatic retries, and `store: false`. The model can be changed to one that supports Responses and structured output. Calls can incur provider charges. No key means a visible **AI setup required** state and a 503 `AI_SETUP_REQUIRED` for starting an interview; it never substitutes canned AI answers. Configuration presence does not prove valid credentials/billing; upstream failures show safe errors.
+
+Optional voice uses browser SpeechRecognition/webkitSpeechRecognition (English `en-IN`) and speechSynthesis. It is activated only by the student's buttons. Microphone permission, browser/OS support, a secure context (or localhost), and sometimes the browser's network service are required. If recognition is unavailable or fails, text chat remains fully usable. The browser provides dictation independently of the backend AI provider.
+
+### Verification and exact manual flow
+
+```sh
+npm ci
+# Edit your existing server/.env; do not replace it.
+npm run db:check
+npm run typecheck
+npm test
+npm run build
+npm run dev
+```
+
+1. Open `http://localhost:5173`, register or log in as a Student, and open Overview. With no learning or assessment records, expect honest empty states. Reload: the daily visit is recorded only once per UTC day. Existing learning/assignment records appear only for their owner.
+2. Open Resume studio → Create resume. Fill every relevant section, add/remove entries, choose each template, and inspect the live preview. Save, reload, edit and save again. Export a PDF; verify all populated sections. Unfinished drafts are allowed. Export is disabled until changes are saved. Open the same resume in two tabs; a stale save should report a conflict. Unsaved edits are not autosaved; save before navigating away.
+3. Open ATS analyzer. Select your saved resume, paste a real job description, and analyze. Inspect the score components, missing terms, section checks and suggestions. Reload and open a history entry. Repeat with identical saved content and description: the score must match. Edit the resume: previous history retains the original version and result.
+4. Without `OPENAI_API_KEY`, open Mock interviews: expect AI setup required and disabled Start. With a private valid key and API billing, restart the backend, choose a type/difficulty/role and Start. Wait for the generated question, send an answer containing concrete detail, and check that the next question follows the conversation. Reload and continue from history. Finish at the question limit or End session; review the saved transcript. A second Student must not be able to open this session or your resume/analysis by URL.
+5. In a supported browser, try Dictate answer and Read question; grant microphone permission as desired. Review dictated text before sending. Test denied permission/unsupported recognition and continue by typing. Check mobile/tablet navigation and desktop layouts. No real microphone/provider speech service is assumed by automated tests.
+6. Trainer and Admin login still open their own existing workspaces. Their accounts cannot call student-feature endpoints. Authentication, logout and cookie behavior remain unchanged.
+
+Checks were run separately after each phase: 56, 60, 64, then 83 passing tests. Both workspace TypeScript checks and both production builds passed at each phase. Current tests include real disposable MongoDB persistence/ownership, deterministic scoring, PDF signatures for all templates, watcher regression, provider errors, transcript context, concurrency, expiry recovery, and Responses SDK requests against an explicit local HTTP fixture. Those provider fixtures are tests, not a runtime fallback and not proof of a live AI call. Browser checks cover registration/session restoration, dashboard empty states, resume persistence/PDF download, analysis/history, responsive navigation, unconfigured AI, and interview chat workflows with an explicitly labeled local protocol fixture.
+
+Actual Atlas and live OpenAI were not contacted in this cloud task: no credentials are available here. Atlas was previously verified by you locally. Checkpoint 5 remains **Blocked for live-provider verification**, rather than claiming a verified live AI interview. See [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md) for routes, models, files and limitations, and [docs/CHECKPOINTS.md](docs/CHECKPOINTS.md) for status.
