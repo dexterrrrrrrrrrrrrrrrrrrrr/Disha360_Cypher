@@ -1,9 +1,16 @@
 import mongoose, { Schema } from "mongoose";
 import { z } from "zod";
+import { languages } from "../features/coding/validation.js";
 export const problemSchema = z.object({
   key: z.string().min(1).max(100),
   title: z.string().min(3).max(150),
   difficulty: z.enum(["easy", "medium", "hard"]),
+  supportedLanguages: z
+    .array(z.enum(languages))
+    .min(1)
+    .max(4)
+    .refine((v) => new Set(v).size === v.length, "Languages must be distinct")
+    .default([...languages]),
   topic: z.string().min(1).max(100),
   statement: z.string().min(10).max(10000),
   inputFormat: z.string().min(1).max(2000),
@@ -51,6 +58,11 @@ const schema = new Schema(
       type: String,
       enum: ["easy", "medium", "hard"],
       required: true,
+    },
+    supportedLanguages: {
+      type: [String],
+      enum: languages,
+      default: () => [...languages],
     },
     topic: { type: String, required: true },
     statement: { type: String, required: true },

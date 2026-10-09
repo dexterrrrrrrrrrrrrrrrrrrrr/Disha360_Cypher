@@ -17,6 +17,7 @@ export function problemDTO(p: InstanceType<typeof CodingProblem>) {
     title: p.title,
     difficulty: p.difficulty,
     topic: p.topic,
+    supportedLanguages: [...p.supportedLanguages],
     statement: p.statement,
     inputFormat: p.inputFormat,
     outputFormat: p.outputFormat,

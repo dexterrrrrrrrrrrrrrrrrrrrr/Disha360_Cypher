@@ -16,6 +16,7 @@ interface Problem {
   title: string;
   difficulty: string;
   topic: string;
+  supportedLanguages: Language[];
   statement: string;
   inputFormat: string;
   outputFormat: string;
@@ -161,6 +162,20 @@ export function CodingChallenge() {
         p && (
           <>
             <section className="card mb-6 space-y-5 break-words">
+              <p className="text-xs text-slate-500">
+                Supported languages:{" "}
+                {p.supportedLanguages
+                  .map(
+                    (l) =>
+                      ({
+                        python: "Python",
+                        java: "Java",
+                        cpp: "C++",
+                        javascript: "JavaScript",
+                      })[l],
+                  )
+                  .join(", ")}
+              </p>
               <p className="whitespace-pre-wrap text-sm leading-7">
                 {p.statement}
               </p>

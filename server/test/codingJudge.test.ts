@@ -62,7 +62,7 @@ it("seeds explicitly in development and hides all hidden test data and source fr
   expect(await CodingProblem.countDocuments()).toBe(0);
   const { app, p, s } = await setup();
   await seedCoding("development");
-  expect(await CodingProblem.countDocuments()).toBe(2);
+  expect(await CodingProblem.countDocuments()).toBe(3);
   for (const path of ["/coding/problems", `/coding/problems/${p.id}`]) {
     const r = await studentCall(app, s.cookie, "get", path);
     expect(JSON.stringify(r.body)).not.toMatch(
@@ -78,7 +78,7 @@ it("seeds explicitly in development and hides all hidden test data and source fr
         "/coding/problems?difficulty=hard",
       )
     ).body.data.problems,
-  ).toEqual([]);
+  ).toHaveLength(1);
   expect(
     (
       await studentCall(

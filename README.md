@@ -249,7 +249,7 @@ npm run dev
 
 Open Coding practice → switch through all four languages → edit code and stdin → Save draft → reload. Each student/language/problem scope has its own versioned draft. Save before navigating away. Java uses class `Main`; JavaScript uses Node stdin via `fs`.
 
-Browse challenges at `/coding/problems`, filter difficulty/topic and inspect statements/formats/constraints/examples. The seed creates two clearly marked database-backed sample problems, is idempotent, refuses production/non-demo collisions and never runs on startup. Production hides samples. With configured isolation, Run uses custom/sample stdin; Submit evaluates backend-only hidden cases. After finalization inspect the private history and real solved indicators. Retry the same request after a network failure to reuse its request ID; duplicates do not reprocess. Wrong answers, timeouts, compile/runtime/memory and system errors have explicit verdicts. Hidden inputs, expected/actual outputs and diagnostics are never returned by judging.
+Browse challenges at `/coding/problems`, filter difficulty/topic and inspect statements/formats/constraints/examples. The seed creates three clearly marked database-backed sample problems: Easy (sum), Medium (reverse a word), and Hard (longest increasing subsequence). Each includes valid examples, four-language metadata and backend-only hidden cases. It validates the entire bank, inserts missing keys only, preserves edited existing problems and all submissions, refuses non-demo key collisions and never runs on startup. Production hides samples. With configured isolation, Run uses custom/sample stdin; Submit evaluates backend-only hidden cases. After finalization inspect the private history and real solved indicators. Retry the same request after a network failure to reuse its request ID; duplicates do not reprocess. Wrong answers, timeouts, compile/runtime/memory and system errors have explicit verdicts. Hidden inputs, expected/actual outputs and diagnostics are never returned by judging.
 
 Scores = passed hidden cases / total cases × 100 rounded. Output comparison normalizes CRLF/CR, trailing spaces/tabs per line and final newlines; leading/interior whitespace and case remain significant. Runtime/memory are max reported case values. System Error has no performance score; its infrastructure failure does not fabricate a successful run. Latest 100 private submissions appear in history.
 
@@ -264,3 +264,52 @@ Sign in as a Student and open `/learning`. Filter by subject/topic/completion, o
 **PDF/file uploads are not implemented:** there is no configured private storage, malware scanning, file validation/download authorization or end-to-end upload flow. The UI explicitly states this limitation; only text/external links are supported. Do not add an unrestricted upload folder as a substitute.
 
 Run `npm run typecheck`, `npm test`, `npm run build` for regression checks. Tests use real disposable MongoDB and clearly labeled mocked provider/protocol fixtures, never execute student code or prove live sandbox isolation. See [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md) for routes/models/limits and [docs/CHECKPOINTS.md](docs/CHECKPOINTS.md) for phase results. Checkpoints 12–15 remain unimplemented. The implementation was reviewed before the approved final verification and commit.
+
+
+### Coding seed setup and checkout troubleshooting
+
+The published commit `1ceaaa5` already contains both `seed:coding` npm scripts, `server/src/utils/seedCoding.ts`, registered student coding routes, and enabled Coding practice/Learning modules sidebar links. The follow-up fix adds the missing Hard sample, explicit supported-language metadata, stronger seed destination checks, and automated command-level regression coverage. It does not replace working navigation or authentication.
+
+Before seeding, configure **private `server/.env`**:
+
+```dotenv
+NODE_ENV=development
+# Keep your real connection string private; select a dedicated development DB.
+MONGODB_URI=mongodb+srv://<username>:<password>@<cluster-host>/disha360_dev?retryWrites=true&w=majority
+CODING_SEED_DATABASE=disha360_dev
+```
+
+Use a database containing development data only, preferably with an Atlas database user restricted to that database. Changing the URI's database path selects a different database; it does not migrate existing accounts or submissions. Sign up separately in the development database if needed. Do not rename a production database to bypass these checks. The seed command requires development mode and explicit acknowledgement of the **same** database selected by the URI; the name must end `_dev`, `_development`, or `_demo`. It refuses other modes, missing acknowledgement, and mismatched destinations before connecting. Naming and mode checks cannot independently prove that a database contains no production data: choosing a dedicated development database remains the operator's responsibility.
+
+From the repository root:
+
+```bash
+npm ci
+npm run db:check
+npm run seed:coding
+npm run seed:coding  # Repeat: 0 inserted; existing problems/submissions unchanged
+# Equivalent server workspace invocation:
+npm run seed:coding -w server
+npm run dev
+```
+
+Without Judge0 configuration, sign in as a Student → click **Coding practice** in the sidebar → switch languages → edit code and custom stdin → **Save draft** → refresh and confirm restoration. Open **Browse challenges** and filter Easy/Medium/Hard. Hidden cases never appear in problem details or submission responses. Run/Submit remain disabled with a visible setup-required message; Monaco, templates, navigation and draft persistence remain available. **Learning modules** is also an enabled student link; an empty library means no published content, not a disabled feature.
+
+If macOS reports `Missing script: "seed:coding"` or displays grey Coding/Learning items, inspect the actual checkout from the terminal used to launch the app:
+
+```bash
+pwd
+git rev-parse --show-toplevel
+git log -1 --oneline
+npm pkg get scripts.seed:coding
+npm pkg get scripts.seed:coding -w server
+git show HEAD:package.json
+git show HEAD:server/package.json
+git ls-tree HEAD server/src/utils/seedCoding.ts
+git status --short
+git diff HEAD -- package.json server/package.json client/src/layouts/AppLayout.tsx client/src/main.tsx
+```
+
+Compare the working files with the committed versions; preserve local changes before resolving discrepancies. No script in the current committed root/server manifests is missing. A different directory, different working files or an older running frontend can explain the symptom, but this cloud review cannot identify the exact state of your Mac. Stop the previous dev process with Ctrl+C, restart `npm run dev` from the verified repository root, and hard-refresh the browser. Check that the browser uses the URL printed by Vite. If a port is already occupied, identify its owner with `lsof -nP -iTCP:5173 -sTCP:LISTEN` (and port 4000) before deciding which local server to stop. Do not reset or overwrite uncommitted work just to repair navigation.
+
+Verification commands: `npm run typecheck`, `npm test`, `npm run build`. Seed regression tests execute both real npm entry points against an isolated MongoDB database, verify production-mode refusal before connection, validate all examples/hidden outputs, and test repeat/concurrent seeding, existing-data preservation, language metadata and public answer confidentiality. The follow-up review passed **147 tests in 17 files**, all TypeScript checks and both builds. Browser verification used a disposable MongoDB-backed API and Vite proxy with no execution provider; it does not verify live Atlas/Judge0/OpenAI services.
