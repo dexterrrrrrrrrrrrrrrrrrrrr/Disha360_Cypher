@@ -1,3 +1,4 @@
+import { listCompanies, companyDetails, updateCompanyProgress } from '../controllers/companies.js';
 import { problemControllers } from '../controllers/codingProblems.js';
 import { codingControllers } from '../controllers/coding.js';
 import type { ExecutionProvider } from '../services/codeExecution.js';
@@ -66,5 +67,8 @@ export function studentRoutes(clientOrigin: string, status = databaseStatus, pro
   router.post('/coding/problems/:id/submissions', codeLimit, problems.submit);
   router.get('/coding/submissions', problems.history);
   router.get('/coding/submissions/:id', problems.get);
+  router.get('/companies', listCompanies);
+  router.get('/companies/:id', companyDetails);
+  router.put('/companies/:id/progress', updateCompanyProgress);
   return router;
 }

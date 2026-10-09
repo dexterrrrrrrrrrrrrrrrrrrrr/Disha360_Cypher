@@ -136,7 +136,7 @@ curl -i http://localhost:4000/api/v1/auth/me # 401 when no cookie is supplied
 
 `client/src/features/auth` contains session state and protected routing; `layouts/AuthLayout.tsx` preserves the shared sign-in design. Backend modules separate models, validators, services, controllers, middleware, routes, and operator utilities. npm workspaces keep installation simple.
 
-Checkpoints 1–4, 7 and 8 are implemented; Checkpoints 5–6 await live provider verification. Coding workspace/judge (9–10) are implemented with live-provider verification pending. Checkpoints 12–15 remain out of scope. Your locally verified Atlas connection was not re-tested here because its credentials are not available in this cloud runtime. The auth flows were verified using an isolated actual MongoDB server. See [docs/CHECKPOINTS.md](docs/CHECKPOINTS.md) for status.
+Checkpoints 1–4, 7 and 8 are implemented; Checkpoints 5–6 await live provider verification. Coding workspace/judge (9–10) are implemented with live-provider verification pending. Checkpoint 12 company preparation is now implemented; Checkpoints 13–15 remain out of scope. Your locally verified Atlas connection was not re-tested here because its credentials are not available in this cloud runtime. The auth flows were verified using an isolated actual MongoDB server. See [docs/CHECKPOINTS.md](docs/CHECKPOINTS.md) for status.
 
 ## Student preparation features (Checkpoints 2–8)
 
@@ -313,3 +313,48 @@ git diff HEAD -- package.json server/package.json client/src/layouts/AppLayout.t
 Compare the working files with the committed versions; preserve local changes before resolving discrepancies. No script in the current committed root/server manifests is missing. A different directory, different working files or an older running frontend can explain the symptom, but this cloud review cannot identify the exact state of your Mac. Stop the previous dev process with Ctrl+C, restart `npm run dev` from the verified repository root, and hard-refresh the browser. Check that the browser uses the URL printed by Vite. If a port is already occupied, identify its owner with `lsof -nP -iTCP:5173 -sTCP:LISTEN` (and port 4000) before deciding which local server to stop. Do not reset or overwrite uncommitted work just to repair navigation.
 
 Verification commands: `npm run typecheck`, `npm test`, `npm run build`. Seed regression tests execute both real npm entry points against an isolated MongoDB database, verify production-mode refusal before connection, validate all examples/hidden outputs, and test repeat/concurrent seeding, existing-data preservation, language metadata and public answer confidentiality. The follow-up review passed **147 tests in 17 files**, all TypeScript checks and both builds. Browser verification used a disposable MongoDB-backed API and Vite proxy with no execution provider; it does not verify live Atlas/Judge0/OpenAI services.
+
+## Company-wise preparation (Checkpoint 12)
+
+Students can open **Company preparation** from the sidebar, search by company/topic and filter by checklist status. Each profile includes an overview, illustrative stages, aptitude/technical/coding/HR topics, general interview prompts, real published resource recommendations and a private editable preparation checklist. All six development samples—TCS, Infosys, Wipro, Accenture, Cognizant and Capgemini—are **illustrative study plans**, not verified recruitment facts. Requirements vary by role and year; check the current official job posting.
+
+Checklist completion is self-reported: **round(current completed items / current checklist items × 100)**. It persists per student/company. It does not change assessment results, coding verdicts or placement readiness. Duplicate completion requests do not add duplicate progress; removed items do not count toward the current checklist.
+
+### Explicit development sample setup
+
+In private `server/.env`, use your actual MongoDB connection string selecting a dedicated development database and set:
+
+```dotenv
+NODE_ENV=development
+# URI database path must match, e.g. /disha360_dev; keep credentials private.
+COMPANY_SEED_DATABASE=disha360_dev
+```
+
+This reuses the coding seed destination safety guard: the acknowledged name must end `_dev`, `_development` or `_demo`, match the URI's explicit database path, and use development mode. Never point it at a database containing production data. These checks cannot prove what data an operator has placed in a development-named database; use a dedicated database and restricted database user. Selecting a different URI database does not migrate your existing accounts.
+
+From the repository root:
+
+```bash
+npm ci
+npm run db:check
+npm run seed:companies
+npm run seed:companies  # 0 inserted on repeat
+# Equivalent: npm run seed:companies -w server
+npm run dev
+```
+
+Seeding validates profiles, inserts missing sample keys only, rejects non-demo collisions and preserves existing company edits, publication flags and checklist progress. It never runs on startup and never creates learning modules, assessments or coding problems. Samples are hidden when the application is not in development mode. Optional existing `seed:coding` and `seed:assessments` commands can populate their own development banks; they are separate explicit operations.
+
+### Local verification
+
+1. Register/log in as a Student. Click **Company preparation**. Six labeled samples should appear after explicit seeding; otherwise expect the helpful empty state.
+2. Search `TCS`, open its preparation plan and inspect the illustrative stages, study topics and general interview prompts.
+3. Mark two checklist items complete: expect **40%**. Refresh the page and return to the directory: progress persists. Uncheck an item: expect **20%**. Use the In progress/Complete filters.
+4. Register a second Student: the same company starts at **0%** for that account. Trainer/Admin do not have student company-progress access.
+5. Open recommended modules/problems/assessments. Recommendations use actual published records matched by curated topics or categories; no matching records produce empty states. Closed/future assessments or assessments without enough published questions are omitted. Resource availability is rechecked on navigation by the existing destination APIs.
+6. Open the linked mock interview workspace. Missing OpenAI credentials still show the existing setup-required state; no company-specific AI interview or fake interview is generated.
+7. Repeat checks on a phone/tablet-sized viewport. Run `npm test`, `npm run typecheck`, and `npm run build` for regression verification.
+
+No new paid service or credentials are required beyond the existing MongoDB configuration. Company content is read-only for students; full company authoring is outside this checkpoint. Profiles are database-backed, not hardcoded frontend cards. General recommendations are not employer-endorsed resources and do not guarantee hiring outcomes. Lists are capped at 200 company profiles and 12 items per resource group for this prototype; no pagination is added. Live Atlas/OpenAI/Judge0 verification remains unchanged from earlier checkpoints.
+
+Checkpoint 12 verification: **161 tests / 18 files**, all client/server/test TypeScript checks and both builds passed. Browser checks covered real database-backed Student navigation, search, saved checklist reload/uncheck, actual module links, resource empty states and phone/tablet/desktop layouts. Testing uses a disposable real MongoDB server, not Atlas. On a fresh test cache, if parallel MongoDB binary downloads collide, first run `npm run test -w server -- test/companies.test.ts` to populate the verified cache, then rerun the full suite. The existing lazy Monaco bundle advisory remains.

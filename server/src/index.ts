@@ -1,3 +1,4 @@
+import { Company, CompanyProgress } from './models/Company.js';
 import { LearningModule } from './models/LearningModule.js';
 import { CodingProblem } from './models/CodingProblem.js';
 import { CodingSubmission } from './models/CodingSubmission.js';
@@ -23,6 +24,7 @@ if (env.MONGODB_URI) {
   try {
     await connectDatabase(env.MONGODB_URI);
     // Explicitly ensure unique and TTL indexes, even when production autoIndex is disabled.
+    await Promise.all([Company.createIndexes(), CompanyProgress.createIndexes()]);
     await LearningModule.createIndexes();
     await CodeDraft.createIndexes();
     await Promise.all([CodingProblem.createIndexes(), CodingSubmission.createIndexes()]);

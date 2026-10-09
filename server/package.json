@@ -13,7 +13,8 @@
     "seed:demo": "tsx src/utils/seedDemo.ts",
     "user:create": "tsx src/utils/provisionUser.ts",
     "seed:assessments": "tsx src/utils/seedAssessments.ts",
-    "seed:coding": "tsx src/utils/seedCoding.ts"
+    "seed:coding": "tsx src/utils/seedCoding.ts",
+    "seed:companies": "tsx src/utils/seedCompanies.ts"
   },
   "dependencies": {
     "cors": "^2.8.5",
