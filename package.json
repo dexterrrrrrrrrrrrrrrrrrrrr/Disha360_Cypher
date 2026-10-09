@@ -1,17 +1,26 @@
 {
-  "name": "mystartupwave-cypher",
+  "name": "disha360-lms",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "workspaces": ["client", "server"],
-  "engines": { "node": ">=22.12.0" },
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
     "dev": "concurrently -k -n api,web \"npm run dev -w server\" \"npm run dev -w client\"",
     "build": "npm run build -w server && npm run build -w client",
     "typecheck": "npm run typecheck --workspaces",
     "test": "npm run test -w server",
     "db:check": "npm run db:check -w server",
-    "start": "npm run start -w server"
+    "start": "npm run start -w server",
+    "seed:demo": "npm run seed:demo -w server",
+    "user:create": "npm run user:create -w server"
   },
-  "devDependencies": { "concurrently": "^9.2.0" }
+  "devDependencies": {
+    "concurrently": "^9.2.0"
+  }
 }

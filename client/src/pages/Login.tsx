@@ -1,17 +1,40 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, BookOpen, ChartNoAxesCombined, Check, Eye, EyeOff, GraduationCap, LockKeyhole, Mail } from 'lucide-react';
-import { Brand } from '../components/Brand';
-import { roleLabels, type Role } from '../types';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { ArrowRight, Eye, EyeOff, LoaderCircle, LockKeyhole, Mail } from 'lucide-react';
+import { AuthLayout } from '../layouts/AuthLayout';
+import { useAuth } from '../features/auth/AuthProvider';
 
 export function Login() {
+  const auth = useAuth();
   const navigate = useNavigate();
-  const [role, setRole] = useState<Role>('student');
+  const location = useLocation();
   const [showPassword, setShowPassword] = useState(false);
-  const [message, setMessage] = useState('');
-  function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); setMessage('Authentication is not implemented in the foundation stage. No credentials were sent or saved. Use the dashboard preview below.'); }
-  return <div className="min-h-screen bg-white"><div className="grid min-h-screen lg:grid-cols-[1fr_1fr]"><aside className="relative flex flex-col overflow-hidden bg-[#17233b] px-7 py-8 text-white sm:px-12 lg:px-16"><Link to="/login" className="w-fit"><Brand dark/></Link><div className="my-auto max-w-lg py-12 lg:py-16"><span className="inline-flex items-center gap-2 rounded-full border border-indigo-300/20 bg-indigo-300/10 px-3 py-1.5 text-[11px] font-medium tracking-wide text-indigo-200"><span className="h-1.5 w-1.5 rounded-full bg-indigo-300"/>Your placement journey, simplified</span><h1 className="mt-7 text-4xl font-semibold leading-[1.17] tracking-tight sm:text-5xl">Prepare with purpose.<br/><span className="text-indigo-300">Step into your future.</span></h1><p className="mt-6 max-w-md text-sm leading-7 text-slate-300">A single workspace for the skills, practice, and confidence you need to take your next big step.</p><div className="mt-10 space-y-5">{[[BookOpen, 'Learn at your own pace', 'Structured modules and placement resources.'], [GraduationCap, 'Turn practice into progress', 'Assessments, coding, and interview preparation.'], [ChartNoAxesCombined, 'See how far you’ve come', 'Personal insights and preparation milestones.']].map(([Icon, title, detail]) => { const ItemIcon = Icon as typeof BookOpen; return <div key={String(title)} className="flex items-start gap-4"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5"><ItemIcon size={19} className="text-indigo-200"/></span><div><h2 className="text-sm font-medium text-white">{String(title)}</h2><p className="mt-1 text-xs leading-5 text-slate-400">{String(detail)}</p></div></div>; })}</div><p className="mt-8 text-[11px] leading-5 text-slate-400">Planned capabilities · being developed across 15 checkpoints</p></div><div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-5 text-[11px] text-slate-400"><span>MyStartupWave Cypher 4.0</span><span>Learn. Practise. Get ready.</span></div></aside>
-    <main id="main-content" className="flex flex-col justify-center px-6 py-12 sm:px-14 lg:px-16"><div className="mx-auto w-full max-w-md"><div className="mb-7 flex items-center gap-2 text-xs font-medium text-brand"><span className="h-7 w-7 rounded-lg bg-indigo-50 p-1.5"><LockKeyhole size={16}/></span>Placement training workspace</div><h2 className="text-3xl font-bold tracking-tight text-ink">Welcome to Cypher</h2><p className="mt-3 text-sm leading-6 text-slate-500">Your next opportunity starts with preparation.</p><div className="mb-7 mt-6 rounded-lg border border-amber-200 bg-amber-50 px-3.5 py-3 text-xs leading-5 text-amber-800"><strong>Foundation preview.</strong> Sign-in is not connected yet. Choose a role to explore its dashboard without an account.</div>
-    <form onSubmit={submit} className="space-y-5"><div><label htmlFor="email" className="field-label">Email address</label><div className="relative"><Mail size={17} className="absolute left-3.5 top-3.5 text-slate-400"/><input id="email" name="email" type="email" autoComplete="email" required placeholder="you@college.edu" className="input pl-11"/></div></div><div><label htmlFor="password" className="field-label">Password</label><div className="relative"><LockKeyhole size={17} className="absolute left-3.5 top-3.5 text-slate-400"/><input id="password" name="password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" required placeholder="Enter your password" className="input px-11"/><button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3.5 text-slate-400" aria-label={showPassword ? 'Hide password' : 'Show password'}>{showPassword ? <EyeOff size={17}/> : <Eye size={17}/>}</button></div></div><button type="submit" className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-700">Sign in <ArrowRight size={16}/></button>{message && <p role="status" className="rounded-lg bg-slate-50 p-3 text-xs leading-5 text-slate-600">{message}</p>}</form>
-    <div className="my-7 flex items-center gap-4"><span className="h-px flex-1 bg-slate-200"/><span className="text-[11px] font-medium uppercase tracking-wider text-slate-400">Explore the foundation</span><span className="h-px flex-1 bg-slate-200"/></div><label htmlFor="preview-role" className="field-label">Preview workspace as</label><select id="preview-role" value={role} onChange={event => setRole(event.target.value as Role)} className="input">{Object.entries(roleLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><button onClick={() => navigate(`/preview/${role}`)} className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm font-semibold text-brand hover:bg-indigo-100">Open dashboard preview <ArrowRight size={16}/></button><p className="mt-4 flex items-center justify-center gap-1.5 text-[11px] text-slate-400"><Check size={13}/> No account needed · No data saved</p><p className="mt-9 text-center text-[11px] leading-5 text-slate-400">Authentication and registration will be added in checkpoint 1.</p></div></main></div></div>;
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  if (!auth.loading && auth.user) return <Navigate to={`/dashboard/${auth.user.role}`} replace/>;
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault(); if (busy || auth.loading) return;
+    const form = new FormData(event.currentTarget);
+    setBusy(true); setError('');
+    try {
+      const user = await auth.login(String(form.get('email')), String(form.get('password')));
+      const from = location.state?.from;
+      navigate(from === `/dashboard/${user.role}` ? from : `/dashboard/${user.role}`, { replace: true });
+    } catch (err) { setError(err instanceof Error ? err.message : 'Sign-in failed. Please try again.'); }
+    finally { setBusy(false); }
+  }
+  return <AuthLayout>
+    <div className="mb-7 flex items-center gap-2 text-xs font-medium text-brand"><LockKeyhole size={18}/>Your secure placement workspace</div>
+    <h2 className="text-3xl font-bold tracking-tight text-ink">Welcome back</h2>
+    <p className="mb-8 mt-3 text-sm leading-6 text-slate-500">Sign in to Disha360 and continue your journey.</p>
+    {(location.state?.loggedOut || auth.notice === 'loggedOut') && <p role="status" className="mb-5 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700">You’ve been signed out successfully.</p>}
+    {(error || auth.error) && <p role="alert" className="mb-5 rounded-lg border border-red-100 bg-red-50 p-3 text-sm text-red-700">{error || auth.error}</p>}
+    <form onSubmit={submit} aria-busy={busy}><fieldset disabled={busy || auth.loading} className="space-y-5">
+      <div><label htmlFor="email" className="field-label">Email address</label><div className="relative"><Mail size={17} className="absolute left-3.5 top-3.5 text-slate-400"/><input id="email" name="email" type="email" autoComplete="email" required maxLength={254} placeholder="you@college.edu" className="input pl-11"/></div></div>
+      <div><label htmlFor="password" className="field-label">Password</label><div className="relative"><LockKeyhole size={17} className="absolute left-3.5 top-3.5 text-slate-400"/><input id="password" name="password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" required maxLength={128} placeholder="Enter your password" className="input px-11"/><button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3.5 text-slate-400" aria-label={showPassword ? 'Hide password' : 'Show password'}>{showPassword ? <EyeOff size={17}/> : <Eye size={17}/>}</button></div></div>
+      <button type="submit" className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60">{busy || auth.loading ? <><LoaderCircle size={17} className="animate-spin"/>{busy ? 'Signing in…' : 'Checking session…'}</> : <>Sign in <ArrowRight size={16}/></>}</button>
+    </fieldset></form>
+    <p className="mt-6 text-center text-sm text-slate-500">New student? <Link to="/register" className="font-semibold text-brand hover:underline">Create an account</Link></p>
+    <div className="mt-9 rounded-lg border border-slate-100 bg-slate-50 p-4"><p className="text-xs leading-6 text-slate-500">Students, trainers, and placement officers use the same sign-in. Your account determines your workspace; staff accounts are created by an authorized operator.</p>{import.meta.env.DEV && <p className="mt-2 text-xs leading-5 text-slate-400">Development demo accounts can be created with <code>npm run seed:demo</code>. Ask your project operator for the private demo password.</p>}</div>
+  </AuthLayout>;
 }
