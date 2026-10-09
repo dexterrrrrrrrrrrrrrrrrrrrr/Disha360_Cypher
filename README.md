@@ -22,6 +22,8 @@ Open `http://localhost:5173`. The API listens on port `4000` by default; Vite fo
 
 ## MongoDB Atlas configuration
 
+See [the detailed Atlas setup and verification guide](docs/MONGODB_ATLAS.md), including the exact private configuration file and troubleshooting steps. After configuration, run `npm run db:check` for a real connection and read-only ping.
+
 1. Create an Atlas project and cluster.
 2. Under **Database Access**, create a database user with read/write access to the `cypher` database. Your Atlas account password is different from this database user's password.
 3. Under **Network Access**, permit the machine's actual outbound IP, or your environment's supported private networking. Avoid allowing all Internet addresses.

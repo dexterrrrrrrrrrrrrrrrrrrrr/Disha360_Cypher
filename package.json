@@ -10,6 +10,7 @@
     "build": "npm run build -w server && npm run build -w client",
     "typecheck": "npm run typecheck --workspaces",
     "test": "npm run test -w server",
+    "db:check": "npm run db:check -w server",
     "start": "npm run start -w server"
   },
   "devDependencies": { "concurrently": "^9.2.0" }
