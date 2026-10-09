@@ -1,0 +1,6 @@
+{
+  "name": "@cypher/server", "private": true, "version": "0.1.0", "type": "module",
+  "scripts": { "dev": "tsx watch src/index.ts", "build": "tsc", "typecheck": "tsc --noEmit", "start": "node dist/index.js", "test": "vitest run" },
+  "dependencies": { "express": "^5.1.0", "mongoose": "^8.18.0", "zod": "^3.25.0", "dotenv": "^17.2.0", "cors": "^2.8.5", "helmet": "^8.1.0", "express-rate-limit": "^8.1.0" },
+  "devDependencies": { "typescript": "^5.9.0", "tsx": "^4.20.0", "@types/node": "^22.18.0", "@types/express": "^5.0.0", "@types/cors": "^2.8.19", "vitest": "^3.2.0", "supertest": "^7.1.0", "@types/supertest": "^6.0.3" }
+}

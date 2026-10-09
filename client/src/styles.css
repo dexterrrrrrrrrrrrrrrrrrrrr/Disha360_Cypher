@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body { @apply m-0 font-sans text-ink antialiased; }
+  button, a, input, select { @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2; }
+  button:disabled { @apply cursor-not-allowed; }
+  ::selection { @apply bg-indigo-100 text-indigo-900; }
+}
+@layer components {
+  .card { @apply rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm; }
+  .input { @apply w-full rounded-lg border border-slate-200 bg-white px-3.5 py-3 text-sm text-ink placeholder:text-slate-400; }
+  .field-label { @apply mb-2 block text-xs font-semibold text-slate-600; }
+  .status { @apply rounded-md px-2 py-1 text-[10px] font-semibold; }
+  .icon-button { @apply rounded-lg p-2 text-slate-500 hover:bg-slate-100; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
