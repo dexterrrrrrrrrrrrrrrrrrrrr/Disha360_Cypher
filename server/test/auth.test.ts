@@ -214,3 +214,163 @@ describe('operator-only account commands', () => {
     expect(await User.countDocuments()).toBe(0);
   });
 });
+
+describe("explicit development staff provisioning", () => {
+  const execute = promisify(execFile);
+  async function provision(role: string, extras: Record<string, string> = {}) {
+    return execute("npm", ["run", "user:create", "--", "--development"], {
+      cwd: fileURLToPath(
+        new URL(role === "trainer" ? "../.." : "..", import.meta.url),
+      ),
+      env: {
+        ...process.env,
+        NODE_ENV: "development",
+        MONGODB_URI: mongo.getUri("staff_accounts_dev"),
+        PROVISION_DATABASE: "staff_accounts_dev",
+        PROVISION_NAME: "Local Staff",
+        PROVISION_EMAIL: `local.${role}@example.test`,
+        PROVISION_ROLE: role,
+        PROVISION_PASSWORD: password,
+        ...extras,
+      },
+      timeout: 10000,
+    });
+  }
+  it.each(["trainer", "admin"] as const)(
+    "creates development %s securely, permits login and prevents production use",
+    async (role) => {
+      const connection = await mongoose
+        .createConnection(mongo.getUri("staff_accounts_dev"))
+        .asPromise();
+      try {
+        await connection.db!.dropDatabase();
+        const result = await provision(role);
+        expect(result.stdout + result.stderr).not.toContain(password);
+        const staff = await connection
+          .db!.collection("users")
+          .findOne({ email: `local.${role}@example.test` });
+        expect(staff?.role).toBe(role);
+        expect(staff?.isDemo).toBe(true);
+        expect(await verifyPassword(password, staff!.passwordHash)).toBe(true);
+        // Move only the isolated test fixture into the main disposable test database.
+        await User.create({
+          name: staff!.name,
+          email: staff!.email,
+          passwordHash: staff!.passwordHash,
+          role,
+          isDemo: true,
+        });
+        const login = await mutation(request(app), "login", {
+          email: staff!.email,
+          password,
+        });
+        expect(login.status).toBe(200);
+        expect(login.body.data.user.role).toBe(role);
+        expect(
+          (
+            await request(app)
+              .get(`/api/v1/auth/workspace/${role}`)
+              .set("Cookie", cookie(login))
+          ).status,
+        ).toBe(200);
+        const production = createApp({
+          clientOrigin: origin,
+          databaseConfigured: true,
+        });
+        expect(
+          (
+            await mutation(request(production), "login", {
+              email: staff!.email,
+              password,
+            })
+          ).status,
+        ).toBe(401);
+        await expect(provision(role)).rejects.toMatchObject({ code: 1 });
+        expect(await connection.db!.collection("users").countDocuments()).toBe(
+          1,
+        );
+      } finally {
+        await connection.db!.dropDatabase();
+        await connection.close();
+      }
+    },
+    30000,
+  );
+  it("refuses production execution before connecting and omits secret values", async () => {
+    const result = await provision("admin", {
+      NODE_ENV: "production",
+      MONGODB_URI: "mongodb://127.0.0.1:1/live",
+      PROVISION_DATABASE: "live",
+    }).then(
+      () => null,
+      (e) => e,
+    );
+    expect(result?.code).toBe(1);
+    expect(result.stderr).toContain("Development provisioning refused");
+    expect(result.stderr + result.stdout).not.toContain(password);
+    expect(await User.countDocuments()).toBe(0);
+  });
+  it("refuses missing or mismatched development database acknowledgement before connecting", async () => {
+    for (const target of ["", "another_dev"])
+      await expect(
+        provision("trainer", {
+          MONGODB_URI: "mongodb://127.0.0.1:1/staff_accounts_dev",
+          PROVISION_DATABASE: target,
+        }),
+      ).rejects.toMatchObject({ code: 1 });
+    expect(await User.countDocuments()).toBe(0);
+  }, 30000);
+  it("never promotes or overwrites an existing student through development provisioning", async () => {
+    const connection = await mongoose
+      .createConnection(mongo.getUri("staff_accounts_dev"))
+      .asPromise();
+    try {
+      await connection.db!.dropDatabase();
+      const stored = {
+        name: "Existing Student",
+        email: "local.admin@example.test",
+        role: "student",
+        department: "CS",
+        semester: 6,
+        passwordHash,
+      };
+      await connection.db!.collection("users").insertOne(stored);
+      await expect(provision("admin")).rejects.toMatchObject({ code: 1 });
+      const after = await connection
+        .db!.collection("users")
+        .findOne({ email: stored.email });
+      expect(after?.role).toBe("student");
+      expect(after?.passwordHash).toBe(passwordHash);
+    } finally {
+      await connection.db!.dropDatabase();
+      await connection.close();
+    }
+  }, 30000);
+  it("rejects role injection during login and exposes no public role-edit endpoint", async () => {
+    const user = await account("student");
+    expect(
+      (
+        await mutation(request(app), "login", {
+          email: user.email,
+          password,
+          role: "admin",
+        })
+      ).status,
+    ).toBe(400);
+    const login = await mutation(request(app), "login", {
+      email: user.email,
+      password,
+    });
+    expect(
+      (
+        await request(app)
+          .patch("/api/v1/auth/me")
+          .set("Cookie", cookie(login))
+          .set("Origin", origin)
+          .set("X-Disha360-Request", "1")
+          .send({ role: "admin" })
+      ).status,
+    ).toBe(404);
+    expect((await User.findById(user._id))?.role).toBe("student");
+  });
+});

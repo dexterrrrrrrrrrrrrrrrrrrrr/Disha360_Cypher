@@ -358,3 +358,91 @@ Seeding validates profiles, inserts missing sample keys only, rejects non-demo c
 No new paid service or credentials are required beyond the existing MongoDB configuration. Company content is read-only for students; full company authoring is outside this checkpoint. Profiles are database-backed, not hardcoded frontend cards. General recommendations are not employer-endorsed resources and do not guarantee hiring outcomes. Lists are capped at 200 company profiles and 12 items per resource group for this prototype; no pagination is added. Live Atlas/OpenAI/Judge0 verification remains unchanged from earlier checkpoints.
 
 Checkpoint 12 verification: **161 tests / 18 files**, all client/server/test TypeScript checks and both builds passed. Browser checks covered real database-backed Student navigation, search, saved checklist reload/uncheck, actual module links, resource empty states and phone/tablet/desktop layouts. Testing uses a disposable real MongoDB server, not Atlas. On a fresh test cache, if parallel MongoDB binary downloads collide, first run `npm run test -w server -- test/companies.test.ts` to populate the verified cache, then rerun the full suite. The existing lazy Monaco bundle advisory remains.
+
+## Test Trainer and Admin login locally
+
+All roles use the same `/login` form. There is no role dropdown: MongoDB stores the role and the backend returns it after a successful login. Students cannot register a staff role or edit their own role.
+
+The existing `npm run user:create` is the authorized operator command for regular staff accounts. For **local test accounts**, use its new guarded `--development` option. It refuses production mode and unacknowledged/mismatched database destinations before connecting, creates accounts marked as development/demo accounts, and refuses existing emails. These test accounts and their sessions are blocked when the app runs outside development, even if you later point a production app at the same database. No accounts are created automatically on application startup.
+
+### 1. Prepare the private development configuration
+
+Open **`server/.env`**, not `.env.example`. Keep your real MongoDB credentials there and never commit them. Ensure:
+
+```dotenv
+NODE_ENV=development
+# Your MONGODB_URI must explicitly select this same dedicated development database.
+PROVISION_DATABASE=disha360_dev
+```
+
+The database selected in your private connection string must match `PROVISION_DATABASE` and end `_dev`, `_development`, or `_demo`, following the existing coding/company seed safety approach. Never select a database containing production data. If your existing database is named differently, selecting `/disha360_dev` creates a separate development database; it does not migrate or delete your existing students, resumes or other records. Run the backend against the same URI used for provisioning to find the new accounts. Remove conflicting exported `PROVISION_*` variables if they override your file values.
+
+### 2. Create one Trainer
+
+Add these **private values** to `server/.env`, choosing your own email and password:
+
+```dotenv
+PROVISION_NAME="Local Trainer"
+PROVISION_EMAIL="<your-private-trainer-email>"
+PROVISION_ROLE=trainer
+PROVISION_PASSWORD="<your-own-private-strong-password>"
+```
+
+Replace the placeholders; do not use them as credentials. Passwords need 12–128 characters, at least one uppercase letter, one lowercase letter and one number. Use a different password for each test account. Do not paste passwords into chat, command-line arguments or shell history. From the repository root:
+
+```bash
+chmod 600 server/.env
+npm run db:check
+npm run user:create -- --development
+```
+
+Success prints `Staff account created. Credentials omitted.` No email/password/hash is printed. A duplicate email is refused, including an existing Student; the script never promotes or overwrites that account.
+
+### 3. Create one Admin
+
+In the same private file, replace only the provisioning fields with your second account:
+
+```dotenv
+PROVISION_NAME="Local Admin"
+PROVISION_EMAIL="<your-private-admin-email>"
+PROVISION_ROLE=admin
+PROVISION_PASSWORD="<a-different-private-strong-password>"
+```
+
+Run the same explicit command:
+
+```bash
+npm run user:create -- --development
+```
+
+Remember your two chosen passwords securely. **Delete the `PROVISION_NAME`, `PROVISION_EMAIL`, `PROVISION_ROLE`, `PROVISION_PASSWORD` and `PROVISION_DATABASE` entries from `server/.env` after creating the accounts.** The stored hashes remain; removing configuration does not remove the accounts. The equivalent invocation from `server/` is `npm run user:create -- --development`. Root argument forwarding is covered by automated tests.
+
+### 4. Log in and verify access
+
+```bash
+npm run dev
+```
+
+Open `http://localhost:5173/login`. If already signed in, use **Sign out** first; otherwise Disha360 will restore that account's session and send you to its workspace.
+
+| Account | Login with | Expected landing page | Working staff navigation |
+|---|---|---|---|
+| Student | Your registered student email/password | `/dashboard/student` | Student preparation modules |
+| Trainer | The Trainer email/password you selected | `/dashboard/trainer` | Learning content → `/learning/manage/trainer` |
+| Admin | The Admin email/password you selected | `/dashboard/admin` | Learning content → `/learning/manage/admin` |
+
+Refresh after logging in: the session should persist. Staff dashboard metrics and batch/account/report management remain placeholders; those features belong to later checkpoints. Use **Learning content** to test implemented staff functionality.
+
+- As a Student, visit `/dashboard/admin` or `/learning/manage/trainer`: the frontend redirects to `/dashboard/student`; the corresponding protected backend endpoints deny access.
+- As a Trainer, visit `/dashboard/admin`: return to `/dashboard/trainer`. Create a learning draft, save and publish it. A Trainer can manage only their own modules; attempting another Trainer's module is denied.
+- As an Admin, visit `/dashboard/trainer`: return to `/dashboard/admin`. In Learning content, Admin can manage modules owned by Trainers according to existing permissions.
+- Staff accounts cannot use Student-only APIs for resumes, assessments, coding, analytics or company checklists. A frontend redirect never grants backend privileges.
+- Sign out, then revisit a dashboard: expect `/login`. No public staff signup or role-edit API is added.
+
+If login fails, confirm the backend and provisioning command use the same `server/.env`/database, the account email is unique, and the app runs with `NODE_ENV=development` for these test accounts. Restart `npm run dev` after changing environment configuration; never use production mode merely to test local staff accounts.
+
+### Verification for this follow-up
+
+`npm test` now runs both existing backend integration tests and client component tests. `npm run typecheck` checks client source/tests and server source/tests. `npm run build` builds both production targets. Client tests exercise the actual Login and ProtectedRoute components; the router navigation boundary is instrumented to assert redirects without introducing a browser dependency. Backend tests execute both actual npm provisioning entry points, test all role logins and permissions, prevent public role injection/promotion, reject unsafe development destinations and preserve existing accounts. No production login or dashboard implementation was replaced.
+
+Final follow-up verification: **183 tests passed** (167 backend in 18 files, 16 client component tests in one file), client/server/source-and-test TypeScript checks passed, and both production builds passed. Chromium with disposable MongoDB verified Student registration/login, actual Trainer/Admin accounts provisioned through the guarded npm command, role-specific landing/refresh, wrong-role redirects, authorized Learning content navigation, backend role denial and logout. No browser runtime errors occurred. New command-level tests have explicit longer timeouts for their nested npm subprocesses; no assertions were skipped. No live Atlas or provider access was used. Existing staff dashboard placeholders and the Monaco chunk-size advisory remain. No additional checkpoints are implemented; this verification report was recorded before the approved commit/push.
