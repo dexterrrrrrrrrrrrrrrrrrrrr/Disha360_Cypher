@@ -21,6 +21,8 @@ Do not overwrite an existing `.env`. In this cloud workspace, use `npm ci --cach
 
 Open `http://localhost:5173`. The API listens on port 4000. Vite proxies `/api` to the backend. If you change the backend port, update `client/vite.config.ts`. `server/.env` is resolved relative to the server module, including after compilation; injected environment variables take precedence. Never commit credentials or put secrets in `VITE_` variables.
 
+The API development process uses Nodemon with `server/nodemon.json` to watch only TypeScript files under `server/src`, running them through `tsx` without its dependency watcher. Source edits, additions, and deletions restart the API. Dependency directories, build outputs, generated files, logs, caches, temporary files, and common editor backup files are excluded. The root development command still runs the API and Vite together. Changes to `.env` or watcher configuration require a manual restart. A short proxy disconnect during an intentional source-code restart is expected; dependency/build changes should not restart the API.
+
 ## MongoDB Atlas
 
 Follow [docs/MONGODB_ATLAS.md](docs/MONGODB_ATLAS.md). Create an Atlas database user with read/write permission to `cypher`, permit the backend machine's outbound IP, and put the Atlas-supplied URI in **server/.env**. Use a separate development database for demo users. `npm run db:check` connects and sends a read-only ping without printing credentials.

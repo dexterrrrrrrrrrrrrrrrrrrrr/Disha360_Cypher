@@ -1,0 +1,30 @@
+{
+  "watch": [
+    "src"
+  ],
+  "ext": "ts",
+  "ignore": [
+    "src/**/node_modules/**",
+    "src/**/dist/**",
+    "src/**/build/**",
+    "src/**/coverage/**",
+    "src/**/generated/**",
+    "src/**/logs/**",
+    "src/**/tmp/**",
+    "src/**/temp/**",
+    "src/**/.cache/**",
+    "src/**/.tmp/**",
+    "**/*.log",
+    "**/*.tmp",
+    "**/*.tmp.*",
+    "**/*.temp",
+    "**/*.temp.*",
+    "**/*.tsbuildinfo",
+    "**/*~",
+    "**/*.swp",
+    "**/*.swo"
+  ],
+  "exec": "tsx src/index.ts",
+  "signal": "SIGTERM",
+  "delay": 300
+}
