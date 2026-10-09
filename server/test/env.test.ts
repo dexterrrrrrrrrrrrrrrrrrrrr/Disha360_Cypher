@@ -17,3 +17,5 @@ describe('environment validation', () => {
     expect(envSchema.safeParse({ MONGODB_URI: 'https://example.invalid' }).success).toBe(false);
   });
 });
+
+it('requires explicit provider hardening and safe backend URLs',()=>{expect(envSchema.parse({JUDGE0_URL:'https://judge.example'}).JUDGE0_SECURITY_CONFIRMED).toBe(false);for(const url of ['ftp://example.com','http://example.com','https://user:secret@example.com','https://example.com?key=secret'])expect(envSchema.safeParse({JUDGE0_URL:url}).success).toBe(false);expect(envSchema.safeParse({JUDGE0_URL:'http://127.0.0.1:2358',JUDGE0_SECURITY_CONFIRMED:'true'}).success).toBe(true);});

@@ -19,7 +19,8 @@
     "start": "npm run start -w server",
     "seed:demo": "npm run seed:demo -w server",
     "user:create": "npm run user:create -w server",
-    "seed:assessments": "npm run seed:assessments -w server"
+    "seed:assessments": "npm run seed:assessments -w server",
+    "seed:coding": "npm run seed:coding -w server"
   },
   "devDependencies": {
     "concurrently": "^9.2.0"

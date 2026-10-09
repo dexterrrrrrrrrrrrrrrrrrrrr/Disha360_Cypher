@@ -1,3 +1,6 @@
+import { problemControllers } from '../controllers/codingProblems.js';
+import { codingControllers } from '../controllers/coding.js';
+import type { ExecutionProvider } from '../services/codeExecution.js';
 import { Router } from 'express';
 import { databaseStatus } from '../config/database.js';
 import { requireAuth, requireRole, protectMutations } from '../middleware/auth.js';
@@ -12,7 +15,7 @@ import { feedbackControllers } from '../controllers/feedback.js';
 import { listAssessments, assessmentDetails, beginAssessment, listAttempts, getAttempt, saveProgress, submitAttempt } from '../controllers/assessments.js';
 import { studentAnalytics } from '../controllers/analytics.js';
 
-export function studentRoutes(clientOrigin: string, status = databaseStatus, provider?: InterviewProvider) {
+export function studentRoutes(clientOrigin: string, status = databaseStatus, provider?: InterviewProvider, execution?: ExecutionProvider, executionRateLimit = 10) {
   const router = Router();
   router.use((_req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
   router.use(protectMutations(clientOrigin));
@@ -51,5 +54,17 @@ export function studentRoutes(clientOrigin: string, status = databaseStatus, pro
   router.put('/attempts/:id/progress', saveProgress);
   router.post('/attempts/:id/submit', submitAttempt);
   router.get('/analytics', studentAnalytics);
+  const coding = codingControllers(execution);
+  const codeLimit = rateLimit({ windowMs: 60000, limit: executionRateLimit, keyGenerator: req => req.user!.id as string, message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many execution requests. Wait a minute.' } } });
+  router.get('/coding/config', coding.config);
+  router.get('/coding/drafts/:scope', coding.draft);
+  router.put('/coding/drafts/:scope', coding.save);
+  router.post('/coding/run', codeLimit, coding.run);
+  const problems = problemControllers(execution);
+  router.get('/coding/problems', problems.list);
+  router.get('/coding/problems/:id', problems.detail);
+  router.post('/coding/problems/:id/submissions', codeLimit, problems.submit);
+  router.get('/coding/submissions', problems.history);
+  router.get('/coding/submissions/:id', problems.get);
   return router;
 }

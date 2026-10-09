@@ -1,3 +1,5 @@
+import type { ExecutionProvider } from './services/codeExecution.js';
+import { learningRoutes } from './routes/learning.js';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -9,7 +11,7 @@ import { authRoutes } from './routes/auth.js';
 import { studentRoutes } from './routes/student.js';
 import type { InterviewProvider } from './services/interviewProvider.js';
 
-export function createApp(options: { clientOrigin: string; databaseConfigured: boolean; status?: typeof databaseStatus; secureCookies?: boolean; authRateLimit?: number; trustProxy?: boolean; allowDemoAccounts?: boolean; interviewProvider?: InterviewProvider }) {
+export function createApp(options: { clientOrigin: string; databaseConfigured: boolean; status?: typeof databaseStatus; secureCookies?: boolean; authRateLimit?: number; trustProxy?: boolean; allowDemoAccounts?: boolean; interviewProvider?: InterviewProvider; executionProvider?: ExecutionProvider; executionRateLimit?: number }) {
   const app = express();
   app.locals.allowDemoAccounts = options.allowDemoAccounts ?? false;
   app.disable('x-powered-by');
@@ -20,7 +22,8 @@ export function createApp(options: { clientOrigin: string; databaseConfigured: b
   app.use(express.json({ limit: '100kb' }));
   app.use('/api/v1', healthRoutes(options.databaseConfigured, options.status));
   app.use('/api/v1/auth', authRoutes({ ...options, secureCookies: options.secureCookies ?? false }));
-  app.use('/api/v1/student', studentRoutes(options.clientOrigin, options.status, options.interviewProvider));
+  app.use('/api/v1/student', studentRoutes(options.clientOrigin, options.status, options.interviewProvider, options.executionProvider, options.executionRateLimit));
+  app.use('/api/v1/learning', learningRoutes(options.clientOrigin, options.status));
   app.use(notFound);
   app.use(errorHandler);
   return app;

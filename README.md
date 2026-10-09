@@ -1,6 +1,6 @@
 # Disha360 Placement Training LMS
 
-A placement training LMS built with React, Vite, TypeScript, Tailwind, Express, and MongoDB. **Checkpoints 1–4, 7 and 8 are implemented and locally verified.** Checkpoints 5–6 have a real OpenAI integration and tested workflows; live AI verification requires backend credentials. The student dashboard reads actual MongoDB records and shows empty states when performance evidence is absent. The existing design system and project structure are preserved.
+A placement training LMS built with React, Vite, TypeScript, Tailwind, Express, and MongoDB. **Checkpoints 1–4, 7–8 and text/link learning (11) are implemented and locally verified.** Checkpoints 5–6 have a real OpenAI integration and tested workflows; live AI verification requires backend credentials. The student dashboard reads actual MongoDB records and shows empty states when performance evidence is absent. The existing design system and project structure are preserved.
 
 ## Install and run
 
@@ -136,11 +136,11 @@ curl -i http://localhost:4000/api/v1/auth/me # 401 when no cookie is supplied
 
 `client/src/features/auth` contains session state and protected routing; `layouts/AuthLayout.tsx` preserves the shared sign-in design. Backend modules separate models, validators, services, controllers, middleware, routes, and operator utilities. npm workspaces keep installation simple.
 
-Checkpoints 1–4, 7 and 8 are implemented; Checkpoints 5–6 await live provider verification. Checkpoints 9–15 remain out of scope. Your locally verified Atlas connection was not re-tested here because its credentials are not available in this cloud runtime. The auth flows were verified using an isolated actual MongoDB server. See [docs/CHECKPOINTS.md](docs/CHECKPOINTS.md) for status.
+Checkpoints 1–4, 7 and 8 are implemented; Checkpoints 5–6 await live provider verification. Coding workspace/judge (9–10) are implemented with live-provider verification pending. Checkpoints 12–15 remain out of scope. Your locally verified Atlas connection was not re-tested here because its credentials are not available in this cloud runtime. The auth flows were verified using an isolated actual MongoDB server. See [docs/CHECKPOINTS.md](docs/CHECKPOINTS.md) for status.
 
 ## Student preparation features (Checkpoints 2–8)
 
-- **Dashboard `/dashboard/student`:** personal details, learning completion, recorded assessment average, upcoming assignments, UTC daily streak, persisted recent activity, and next actions derived from the student's resume/interview records. Readiness is an explicit estimate: 25% profile completeness + 40% recorded lesson completion + 35% recorded assessment average. Missing performance records contribute no points; their displayed metrics are blank. A new student with a complete profile has a 25% estimate, not an invented test score. Dashboard visits count as daily check-ins. Students cannot set scores: the assessment engine calculates them from saved answers. Learning delivery remains a later checkpoint.
+- **Dashboard `/dashboard/student`:** personal details, learning completion, recorded assessment average, upcoming assignments, UTC daily streak, persisted recent activity, and next actions derived from the student's resume/interview records. Readiness is an explicit estimate: 25% profile completeness + 40% recorded lesson completion + 35% recorded assessment average. Missing performance records contribute no points; their displayed metrics are blank. A new student with a complete profile has a 25% estimate, not an invented test score. Dashboard visits count as daily check-ins. Students cannot set scores: the assessment engine calculates them from saved answers. Published text/link learning and saved completion are now available.
 - **Resume studio `/resumes`:** private structured drafts, personal details, education, skills, projects, experience, certifications; Classic, Modern, and Compact templates; live preview; explicit save; server-generated PDF. Reload preserves saved content. Save before exporting; the PDF uses the saved version. Concurrent edits are rejected with 409 instead of overwriting a newer version. Resume lists show the latest 100 drafts.
 - **ATS analyzer `/resume-analyzer`:** select a saved resume and enter a 50–12,000-character job description. Deterministic keyword extraction, matched/missing keywords, five completeness checks, evidence checks, component breakdown and suggestions. Scores are reproducible, never random. No AI credentials are needed for this heuristic. History retains private immutable content snapshots and the rubric/version used, including after the original resume is deleted. Latest 100 results are listed.
 - **Interviews `/interviews`:** Technical, Behavioral or HR; Beginner, Intermediate or Advanced; target role, optional focus, 3–10 questions; AI-generated first questions and adaptive follow-ups; private saved transcripts, history, resumable active sessions, automatic completion or early end. The server forwards actual prior questions and answers to OpenAI. Concurrent processing uses a bounded MongoDB lease and version checks. Failed question generation leaves the transcript/version unchanged and permits retry. Text answers remain in the input after a failed request. Completed sessions can now generate saved evidence-linked feedback reports; see Checkpoint 6 below.
@@ -214,3 +214,53 @@ npm run dev
 8. Verify backend health/readiness at `http://localhost:4000/api/v1/health` and `/api/v1/ready`. Tests use disposable MongoDB, not Atlas. For exact API bodies, scoring/analytics formulas and limitations, see [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md).
 
 Checkpoints 6–8 were developed and checked sequentially (90 → 101 → 107 tests). Final review passed **108 tests in 13 files**, client/server/test TypeScript checks and both production builds. Chromium verified refresh/resume, manual/automatic submission, real analytics and saved feedback using an explicitly labeled local provider fixture. Live OpenAI/Atlas were not contacted here because credentials are absent. Feedback estimates are model judgments, not objective measurements; validating quoted evidence cannot establish that every judgment is correct. Keep all credentials in the private backend configuration. The approved pre-commit review reran all 108 tests, TypeScript checks and both production builds successfully; backend enforcement, ownership, explicit development seeding and Git exclusions were reviewed.
+
+
+## Coding and learning (Checkpoints 9–11)
+
+Coding practice uses Monaco (locally bundled and loaded only on the workspace), Python/Java/C++/JavaScript templates, custom stdin, genuine provider stdout/stderr/compiler output, runtime/memory when available, explicit private draft saves and refresh restoration. The app never executes submitted code in Express or local subprocesses. No execution provider means a visible setup-required state and disabled Run/Submit; editing/saving remain usable.
+
+### Execution provider setup
+
+1. Obtain a trusted dedicated **Judge0 CE-compatible provider** or provision its current patched infrastructure separately. Review the provider's sandbox/process/filesystem isolation, host cgroup CPU/memory/process limits and disabled egress. Do not use an unreviewed public demo service. Provider infrastructure is separate from this MERN app.
+2. Confirm it supports asynchronous `/submissions` and language IDs Python=71, Java=62, C++=54, JavaScript=63. Runtime versions depend on that provider. This adapter supports `X-Auth-Token` authentication, not RapidAPI-specific headers.
+3. Set these values in your existing private **server/.env**, never React or Git:
+
+```dotenv
+JUDGE0_URL=https://your-trusted-judge.example
+JUDGE0_API_KEY=<your-private-provider-token-if-required>
+JUDGE0_SECURITY_CONFIRMED=true
+```
+
+Only set `JUDGE0_SECURITY_CONFIRMED=true` after verifying the isolation controls. HTTPS is required except loopback HTTP for local infrastructure/protocol tests. URL credentials and query-string keys are rejected. Without a URL AND this confirmation, execution stays unavailable. The application cannot attest provider infrastructure just from configuration.
+
+4. Restart `npm run dev`. Run a simple stdin/print program in each language and verify real output, compile/runtime errors, an infinite-loop timeout and provider-reported memory. Test network/file/process restrictions in that infrastructure before exposing the service. API presence alone does not prove isolation. Never run these programs inside the Express process.
+
+Backend requests specify CPU 2s (+0.5s extra), wall 5s, memory 256 MiB, stack 64 MiB, process/thread cap 32, file/output cap 16 KiB, one run and network disabled. Provider polling/request deadline is 20s per case; judge processing has a 90s reservation, refuses another case with fewer than 20s remaining. Provider output/response size is bounded. Providers must enforce limits at the host as well; language/runtime memory reporting varies. Judge0 has no portable separate memory-limit verdict: this app labels MLE only when reported usage exceeds the bound, otherwise preserves the runtime/error status. Live provider execution has **not been verified in this cloud environment**.
+
+### Local coding checks
+
+```sh
+npm ci
+npm run db:check
+npm run seed:coding   # Optional, NODE_ENV=development, dedicated development DB
+npm run dev
+```
+
+Open Coding practice → switch through all four languages → edit code and stdin → Save draft → reload. Each student/language/problem scope has its own versioned draft. Save before navigating away. Java uses class `Main`; JavaScript uses Node stdin via `fs`.
+
+Browse challenges at `/coding/problems`, filter difficulty/topic and inspect statements/formats/constraints/examples. The seed creates two clearly marked database-backed sample problems, is idempotent, refuses production/non-demo collisions and never runs on startup. Production hides samples. With configured isolation, Run uses custom/sample stdin; Submit evaluates backend-only hidden cases. After finalization inspect the private history and real solved indicators. Retry the same request after a network failure to reuse its request ID; duplicates do not reprocess. Wrong answers, timeouts, compile/runtime/memory and system errors have explicit verdicts. Hidden inputs, expected/actual outputs and diagnostics are never returned by judging.
+
+Scores = passed hidden cases / total cases × 100 rounded. Output comparison normalizes CRLF/CR, trailing spaces/tabs per line and final newlines; leading/interior whitespace and case remain significant. Runtime/memory are max reported case values. System Error has no performance score; its infrastructure failure does not fabricate a successful run. Latest 100 private submissions appear in history.
+
+Dashboard coding metrics count actual judged submissions and distinct attempted/accepted problems. The readiness weights remain 25% profile / 40% learning / 35% performance. **Documented extension:** when coding evidence exists, performance is the mean of available assessment average and coding solve rate; without coding evidence the existing calculation is unchanged. Solve rate = distinct solved / distinct attempted problems; repeated submissions do not inflate it. System Errors are excluded.
+
+### Learning publishing and consumption
+
+Sign in as a securely provisioned Trainer/Admin and open Learning content. Create a draft with subject/topic, description/objectives, text lessons or HTTPS resources. Save; publish the saved module; edit and save changes; view student progress; unpublish. Trainers can manage only modules they own, including participant progress for those modules. Admins can manage all modules. No batch-management or unrelated Checkpoint 14 interface was added.
+
+Sign in as a Student and open `/learning`. Filter by subject/topic/completion, open a published module, navigate lessons, mark complete/incomplete, reload and resume. Completion IDs and last visited lesson persist privately; duplicate completion requests create no duplicate progress/activity. Progress percentages use the current published lesson set, so removing lessons/unpublishing updates dashboard evidence. Text is escaped, not rendered as HTML; links require external HTTPS without credentials/local or IP hosts. The backend never fetches resource URLs.
+
+**PDF/file uploads are not implemented:** there is no configured private storage, malware scanning, file validation/download authorization or end-to-end upload flow. The UI explicitly states this limitation; only text/external links are supported. Do not add an unrestricted upload folder as a substitute.
+
+Run `npm run typecheck`, `npm test`, `npm run build` for regression checks. Tests use real disposable MongoDB and clearly labeled mocked provider/protocol fixtures, never execute student code or prove live sandbox isolation. See [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md) for routes/models/limits and [docs/CHECKPOINTS.md](docs/CHECKPOINTS.md) for phase results. Checkpoints 12–15 remain unimplemented. The implementation was reviewed before the approved final verification and commit.

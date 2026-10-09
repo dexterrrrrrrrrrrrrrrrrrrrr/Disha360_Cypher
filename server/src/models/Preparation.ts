@@ -3,6 +3,9 @@ import mongoose, { Schema } from 'mongoose';
 const options = { timestamps: true, autoCreate: false, autoIndex: false } as const;
 const progressSchema = new Schema({
   studentId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  moduleId: { type: Schema.Types.ObjectId, ref: 'LearningModule', default: null },
+  completedLessonIds: { type: [Schema.Types.ObjectId], default: [] },
+  lastLessonId: { type: String, default: null },
   moduleKey: { type: String, required: true, maxlength: 100 },
   title: { type: String, required: true, maxlength: 200 },
   completedLessons: { type: Number, required: true, min: 0, validate: Number.isInteger },
@@ -31,7 +34,7 @@ export const AssessmentAssignment = mongoose.model('AssessmentAssignment', assig
 const activitySchema = new Schema({
   studentId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   key: { type: String, required: true, maxlength: 200 },
-  kind: { type: String, required: true, enum: ['dashboard_visit', 'resume_saved', 'resume_analyzed', 'interview_started', 'interview_answered', 'interview_completed', 'interview_feedback', 'assessment_started', 'assessment_completed'] },
+  kind: { type: String, required: true, enum: ['dashboard_visit', 'resume_saved', 'resume_analyzed', 'interview_started', 'interview_answered', 'interview_completed', 'interview_feedback', 'assessment_started', 'assessment_completed', 'coding_submitted', 'lesson_completed'] },
   title: { type: String, required: true, maxlength: 200 },
   day: { type: String, required: true, match: /^\d{4}-\d{2}-\d{2}$/ }
 }, options);

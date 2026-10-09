@@ -1,4 +1,4 @@
-# Checkpoints 2–8 implementation report
+# Checkpoints 2–11 implementation report
 
 Disha360 uses the existing React/Vite/Tailwind client, Express/TypeScript server, Mongoose/MongoDB persistence and cookie authentication. No architecture replacement or Checkpoint 9–15 implementation was performed. New feature modules follow existing models, validators, services, controllers, routes and pages. PDF export uses PDFKit; AI uses the official OpenAI Node SDK, both server-only. The dependency lockfile was updated.
 
@@ -45,7 +45,7 @@ Existing **User** and **Session** remain unchanged.
 | `ResumeAnalysis` | Owner, resume ID/title/version, target description, immutable content snapshot, result/rubric, timestamps; `(studentId,createdAt)` and `(studentId,resumeId)` |
 | `InterviewSession` | Owner, validated setup, status, messages/timestamps, answer limit, provider name, version and temporary lease metadata; `(studentId,updatedAt)` |
 
-Indexes are created on backend startup. Activity records are written only by actual check-ins or successful saved feature actions. Student scores come only from backend assessment finalization. Learning delivery remains future work; no coding, company or achievement collections were added.
+Indexes are created on backend startup. Activity records are written only by actual check-ins or successful saved feature actions. Student scores come only from backend assessment finalization. That earlier phase added assessment delivery; coding and learning are extended below. No company or achievement collections were added.
 
 ## Transparent scoring
 
@@ -105,7 +105,7 @@ Previous Checkpoints 2–5 verification: **83 tests passed in 10 files**, both w
 - Resume editing uses explicit saves, not autosave. Save before route navigation. Export uses saved data; preview is responsive HTML while PDF is paginated A4, so pagination differs. Built-in PDF fonts support typical Latin resumes; broader-script font embedding is future work. Draft fields can be incomplete to support incremental editing.
 - Resume/analysis/interview lists show the latest 100 records; pagination and retention controls are future work. Deleting a resume retains its private analysis snapshots, as the UI states.
 - ATS matching is a documented lexical heuristic; it cannot represent proprietary employer ATS algorithms or verify student claims.
-- No full learning/test authoring, coding, leaderboards, companies or administrative LMS management was added.
+- Full assessment authoring, leaderboards, companies and administrative LMS management remain future work; coding and learning are extended below.
 - Previous pre-push review passed: 83 tests, TypeScript checks, both production builds, authentication regression checks, watcher regression, and checks excluding credentials/generated files. `.env` remains ignored.
 
 ## Checkpoints 6–8: sequential extension
@@ -196,4 +196,85 @@ No new environment variables are required: use private `server/.env` with the ex
 
 Each phase ran `npm run typecheck`, `npm test`, `npm run build`: Checkpoint 6 **90 tests**, Checkpoint 7 **101 tests**, initial Checkpoint 8 **107 tests**, followed by final validation: **108 tests in 13 files**, both TypeScript checks and both production builds passed. All phase checks and both production builds passed. Tests run real disposable MongoDB with actual persistence, ownership, scoring, timers, resumability, concurrency, confidentiality and analytics. Existing registration/login/logout/role, resume/PDF/ATS/interview tests and the source-only watcher regression remain included. Provider tests use the official SDK against an explicit local protocol fixture; they do not call live OpenAI.
 
-Known limits: live OpenAI and Atlas are not configured in this cloud runtime; verify locally before marking live feedback complete. Lists/history show latest 100 records; summary analytics scan all own finalized attempts (prototype scale). Batch administration and full question/test authoring remain Checkpoint 14. There are no proctoring guarantees; finalized sample questions can be revisited. Time includes inactivity and first visible question may accrue loading time. Real speech/microphone services were not exercised. No Checkpoints 9–15 features or unrelated innovations were implemented. The approved pre-commit review reran all 108 tests, TypeScript checks and both production builds successfully; backend timer/scoring enforcement, answer confidentiality, ownership and explicit development seeding passed review.
+Known limits: live OpenAI and Atlas are not configured in this cloud runtime; verify locally before marking live feedback complete. Lists/history show latest 100 records; summary analytics scan all own finalized attempts (prototype scale). Batch administration and full question/test authoring remain Checkpoint 14. There are no proctoring guarantees; finalized sample questions can be revisited. Time includes inactivity and first visible question may accrue loading time. Real speech/microphone services were not exercised. The earlier Checkpoints 6–8 phase did not implement 9–15; the subsequent extension below adds only 9–11. The approved pre-commit review reran all 108 tests, TypeScript checks and both production builds successfully; backend timer/scoring enforcement, answer confidentiality, ownership and explicit development seeding passed review.
+
+## Checkpoints 9–11 extension
+
+These checkpoints were implemented sequentially on commit `f767aa9495cbfcc0bc45bd37a861b5ec2bd97305`; no application recreation, authentication replacement, coding execution in Express or Checkpoint 12–15 features were introduced. The implementation was reviewed before the approved final verification and commit.
+
+### New APIs
+
+Existing response envelopes, opaque session cookies, CSRF origin/header checks, safe errors, database availability checks and `no-store` remain in use. Coding routes are Student-only; ownership is derived from the session. All coding paths below start `/api/v1/student`.
+
+| Method | Path | Input / behavior |
+|---|---|---|
+| GET | `/coding/config` | Safe configured/unavailable state and enforced request limits; never credentials |
+| GET | `/coding/drafts/:scope?language=python` | Own draft; scope `playground` or `problem-<ObjectId>` |
+| PUT | `/coding/drafts/:scope` | `{language,source,stdin,version}`; version 0 creates, saved version updates; stale conflicts 409 |
+| POST | `/coding/run` | `{language,source,stdin}`; genuine configured isolated provider only |
+| GET | `/coding/problems?difficulty=easy&topic=Arithmetic` | Published problem list, own solved flags; exact optional filters; latest 100 |
+| GET | `/coding/problems/:id` | Statement, formats, constraints, examples, no hidden tests |
+| POST | `/coding/problems/:id/submissions` | `{language,source,requestId}`; UUID idempotency, private server judging |
+| GET | `/coding/submissions` | Latest 100 own summaries; expires abandoned processing safely |
+| GET | `/coding/submissions/:id` | Own summary only; never hidden diagnostics or source |
+
+Learning paths start `/api/v1/learning` and require an authenticated session.
+
+| Method | Path | Role / behavior |
+|---|---|---|
+| GET | `/config` | All signed-in roles; explicitly reports uploads unavailable |
+| GET, POST | `/manage/modules` | Trainer own modules / Admin all; create draft from validated metadata/objectives/lessons |
+| GET, PUT | `/manage/modules/:id` | Owner Trainer or Admin; update adds optimistic `version`; immutable owner |
+| POST | `/manage/modules/:id/publication` | Owner Trainer/Admin; `{published,version}`, nonempty lessons required for publication |
+| GET | `/manage/modules/:id/progress` | Owner Trainer/Admin, module participants only; latest 200 progress records with names/departments |
+| GET | `/modules?subject=Web&topic=React&completed=true` | Student, published only; exact optional filters and own completion; latest 100 |
+| GET | `/modules/:id` | Student, published module with own progress only |
+| POST | `/modules/:id/lessons/:lessonId/visit` | Student, `{}`; own current lesson persists |
+| POST | `/modules/:id/lessons/:lessonId/completion` | Student, `{complete:boolean}`; own completion/incompletion only |
+
+Learning create/edit fields: `{title,subject,topic,description,objectives:string[],lessons:[{id?,title,kind:text|link,body,url}]}`. New lessons omit IDs; edit preserves existing IDs and rejects foreign/duplicate IDs. Published empty modules are rejected. Existing global JSON body limit is 100 KB; at most 30 lessons, 10,000 characters per body, 20 objectives. Split large courses across modules rather than exceeding request limits. Plain content is escaped in React; no raw HTML rendering. Link URLs must be external HTTPS without credentials/local/IP hosts. The server does not fetch URLs, embed arbitrary HTML or handle uploads.
+
+### Models and indexes
+
+- **CodeDraft:** owner, scope, language, source/stdin, optimistic version/timestamps; unique `(studentId,scope,language)`. Drafts are explicit saves, never other students' records.
+- **CodingProblem:** validated category metadata, statement/formats/constraints, examples, private hidden tests (`select:false`), publication/demo/version; unique key and publication/difficulty/topic index. Hidden tests are selected explicitly only by backend judging.
+- **CodingSubmission:** owner/problem/version/title, language/source (private), UUID request ID, processing reservation/status, verdict, passed/total/backend score, max runtime/memory, dates; unique owner/request ID, owner/history and owner/problem/verdict indexes, expiry index. No stored per-case outputs are exposed.
+- **LearningModule:** owner, metadata/objectives, ordered **embedded LearningLesson documents** with stable ObjectIds, publication/version/timestamps; owner/update and publication/subject/topic indexes. Embedding avoids a separate lesson collection and makes edits/publication atomic in one MongoDB operation; this is the deliberate modular-monolith adjustment.
+- **LearningProgress:** existing unique owner/moduleKey collection reused; adds module reference, completed lesson IDs and last visited lesson. `$addToSet`/`$pull` updates prevent duplicate/lost concurrent completion evidence. New-module counts are derived from current published lesson IDs; legacy completed/total fields remain compatible for old evidence records. Unpublished module records are excluded from student dashboard evidence. No duplicate progress collection is created.
+- **Activity:** actual successful coding judgments and lesson completions use stable submission/lesson keys; repeated requests do not duplicate events.
+
+### Isolated provider and judge rules
+
+Only `Judge0Provider` can execute configured code in production. It sends base64 source/stdin to a trusted external CE-compatible server, creates a job and polls bounded responses. It never invokes eval/Function/vm/subprocesses. Four language IDs: Python 71, Java 62 (`Main`), C++ 54, JavaScript 63 (Node). Editor/templates are frontend-only strings; Monaco and its worker/language assets are bundled locally, with no CDN credential exposure and lazy editor loading.
+
+Backend fixed request bounds: source 30,000 chars, stdin 10,000 chars, CPU 2s + 0.5s extra, wall 5s, memory 262,144 KB, stack 65,536 KB, process/thread cap 32, created-file/output cap 16 KB, one run, network disabled. Provider response reading stops over 100,000 bytes; decoded output is truncated at 16,384 bytes per stream and successful overflowing output is rejected. Polling has a 20s abort deadline per case, at most 40 polls. Redirects are rejected so credentials cannot be forwarded to another endpoint. Execution/judging share 10 requests per authenticated student/minute, plus the existing API limiter.
+
+`JUDGE0_URL` and `JUDGE0_SECURITY_CONFIRMED=true` are both required to activate execution. Optional `JUDGE0_API_KEY` is sent only as `X-Auth-Token`. Configuration presence cannot verify isolation. The operator must verify a patched provider with host cgroup/resource controls, restricted filesystem/processes and disabled outbound network. HTTPS URLs without embedded credentials/query keys are required; loopback HTTP is allowed for local testing. RapidAPI-specific gateway headers are not supported by this adapter. Real runtime versions and memory enforcement/reporting depend on the provider and need live validation. No external provider is configured here; tests use named fixtures and never run submitted source code.
+
+Judging uses backend-only hidden cases (1–10). The UUID unique index reserves processing once before provider calls; duplicates return the same stored submission. Reservation is 90s; another case is refused with fewer than 20s remaining. Abandoned jobs become System Error on subsequent reads/dashboard access; a late worker cannot overwrite an expired reservation. No client score, hidden input or expected output is accepted. Infrastructure failure is System Error with null score, not an assumed success.
+
+Output normalization: CRLF/CR → LF, strip trailing spaces/tabs on each line, remove final newline characters. Leading/interior whitespace, line count and case remain significant. All tests must match for Accepted; mismatches produce Wrong Answer. Scores are rounded passed/total ×100 (unexecuted cases count as not passed); compile/runtime/time/memory failures preserve their verdict. System Error is excluded from performance. Runtime/memory are maximum reported case values, null if unsupported. Judge0 status mapping: 3 normal exit, 5 TLE, 6 compilation error, 7–12 runtime error; unsupported/internal statuses System Error. A distinct MLE cannot be established from generic runtime failure: only reported memory exceeding the configured bound produces MLE. Hidden inputs/outputs/compiler/runtime diagnostics and per-case details are withheld from every submission DTO; aggregate passed count/verdict are intentional judge results.
+
+`npm run seed:coding` explicitly creates two labeled development-only database problems, validates schemas, is idempotent, rejects non-demo key collisions and refuses non-development. Never called on startup; production hides demos. Full problem authoring/admin systems remain Checkpoint 14.
+
+### Dashboard and learning permissions
+
+Coding performance counts only non-System-Error finalized records. Solved/attempted counts use distinct problem IDs so repeats cannot inflate the solve rate. Recommended actions point to genuinely unsolved coding evidence. Readiness preserves 25% profile, 40% learning and 35% performance: when coding exists, performance is the mean of available assessment average and distinct coding solve rate; without coding the previous assessment calculation is unchanged. This documented extension satisfies the new coding-readiness input requirement without inventing data or changing the original weights.
+
+Students only consume published modules and write their own visit/completion evidence. Trainer authorization is **content ownership**, including progress for participants of that content; there is no implied access to another trainer's module or institution-wide progress. Admin can manage all modules. Full assigned-batch administration is not added. Lessons retain IDs through edits; removed lessons do not count as complete, new lessons add to the denominator, and unpublished modules no longer contribute dashboard evidence. Actual unfinished module records provide resume recommendations. Historical lesson events remain actual events, not fabricated learning outcomes.
+
+**PDF/file uploads remain unavailable.** No private file-storage backend is configured, so no upload endpoint, public upload folder or download-authorization claim exists. Text/link workflows are functional; secure validation, private storage, permissions, scanning and end-to-end download tests are prerequisites for future uploads.
+
+### Files, verification and limitations
+
+New client: `features/coding/Editor.tsx`, `templates.ts`, `pages/CodingWorkspace.tsx`, `CodingProblems.tsx`, `Learning.tsx`, `LearningManage.tsx`, `hooks/useLearningData.ts`, `services/learning.ts`. Modified client: protected routes/navigation, student dashboard and existing request helper's optional API prefix (default behavior unchanged).
+
+New server: coding draft/problem controllers and validation, models `CodeDraft`, `CodingProblem`, `CodingSubmission`, `LearningModule`/embedded lessons; services `codeExecution`, `codingJudge`, `sampleCoding`, `learningProgress`; `routes/learning`, `validators/learning`, `utils/seedCoding`. Modified: app/student route registration, startup indexes/provider construction, env validation/example, existing progress/activity models and dashboard. Root/server scripts add seed command; client dependencies/lock add Monaco and React wrapper only.
+
+Tests: `coding.test.ts`, `codingJudge.test.ts`, `learning.test.ts`; existing env/availability tests extended. Phase checks: 9 — 120 tests, 10 — 131 tests, 11 initial — 137 tests; subsequent full regression — 139 tests in 16 files, all TypeScript checks and both production builds passed. All prior 108 tests remain included: authentication, resumes/PDF, ATS, interviews/feedback, MCQ/analytics and watcher. MongoDB tests use a real isolated process with checksum verification, not Atlas. Provider tests use explicit fixtures, not live isolated execution. README contains exact local setup/UI flows.
+
+Known limitations: live Judge0/OpenAI and Atlas unavailable in this cloud runtime; runtime restrictions/compilers need real provider verification. No secure PDF uploads. Monaco's lazily loaded editor chunk exceeds Vite's 500 KB advisory threshold; main app is approximately 396 KB before gzip. Draft saves are explicit; save before navigating away. No proctoring guarantees. Publication revocation applies to subsequent requests; already fetched content cannot be erased from a browser. Lists/progress have prototype record caps and no pagination. No Checkpoints 12–15 implementation, account management or unrelated features added. No credentials/dependencies/generated outputs are tracked.
+
+Browser verification used a disposable database and real Vite-proxied HTTP APIs with execution deliberately **unconfigured**: all templates/Monaco, private stdin draft saves and restoration, honest disabled Run/Submit, published challenge statements, trainer create/save/publish/unpublish/progress, student safe text/lesson completion/reload/dashboard, and student layouts at 375/768/1440px. No runtime errors occurred. No live code execution, Atlas, OpenAI or PDF upload verification is implied. Client accessibility labels were clarified during this review and the production frontend rebuilt afterward.
+
+Additional Chromium checks verified actual Monaco source editing (not just templates), source save/reload, and trainer content list/editor layouts at 375/768/1440px. The final frontend rebuild passed after the label adjustments. Temporary browser servers/databases/helpers were kept outside Git and stopped after validation.

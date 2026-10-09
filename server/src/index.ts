@@ -1,3 +1,8 @@
+import { LearningModule } from './models/LearningModule.js';
+import { CodingProblem } from './models/CodingProblem.js';
+import { CodingSubmission } from './models/CodingSubmission.js';
+import { Judge0Provider } from './services/codeExecution.js';
+import { CodeDraft } from './models/CodeDraft.js';
 import { env } from './config/env.js';
 import { connectDatabase, disconnectDatabase } from './config/database.js';
 import { createApp } from './app.js';
@@ -18,6 +23,9 @@ if (env.MONGODB_URI) {
   try {
     await connectDatabase(env.MONGODB_URI);
     // Explicitly ensure unique and TTL indexes, even when production autoIndex is disabled.
+    await LearningModule.createIndexes();
+    await CodeDraft.createIndexes();
+    await Promise.all([CodingProblem.createIndexes(), CodingSubmission.createIndexes()]);
     await User.createIndexes();
     await Session.createIndexes();
     await Promise.all([Activity.createIndexes(), LearningProgress.createIndexes(), AssessmentAssignment.createIndexes()]);
@@ -36,7 +44,7 @@ if (env.MONGODB_URI) {
   }
 } else console.warn('MONGODB_URI is not configured. Authentication and persistence are unavailable; health endpoints remain available.');
 
-const app = createApp({ clientOrigin: env.CLIENT_ORIGIN, databaseConfigured: Boolean(env.MONGODB_URI), secureCookies: env.NODE_ENV === 'production', trustProxy: env.TRUST_PROXY, allowDemoAccounts: env.NODE_ENV === 'development', interviewProvider: env.OPENAI_API_KEY ? new OpenAIInterviewProvider(env.OPENAI_API_KEY, env.OPENAI_MODEL) : undefined });
+const app = createApp({ executionProvider: env.JUDGE0_URL && env.JUDGE0_SECURITY_CONFIRMED ? new Judge0Provider(env.JUDGE0_URL, env.JUDGE0_API_KEY) : undefined, clientOrigin: env.CLIENT_ORIGIN, databaseConfigured: Boolean(env.MONGODB_URI), secureCookies: env.NODE_ENV === 'production', trustProxy: env.TRUST_PROXY, allowDemoAccounts: env.NODE_ENV === 'development', interviewProvider: env.OPENAI_API_KEY ? new OpenAIInterviewProvider(env.OPENAI_API_KEY, env.OPENAI_MODEL) : undefined });
 const server = app.listen(env.PORT, '0.0.0.0', () => console.log(`Disha360 API listening on port ${env.PORT}`));
 let sweeping = false;
 const expiryWorker = setInterval(() => { if (sweeping || databaseStatus() !== 'connected') return; sweeping = true; void sweepExpiredAttempts().catch(() => console.error('Assessment expiry sweep failed; retrying later.')).finally(() => { sweeping = false; }); }, 5000);
