@@ -12,15 +12,18 @@ import {
   type ExecutionProvider,
 } from "../services/codeExecution.js";
 import { AppError } from "../utils/AppError.js";
-export function codingControllers(provider?: ExecutionProvider) {
+export function codingControllers(provider?: ExecutionProvider, demoMode = false) {
   const config: RequestHandler = (_req, res) =>
     res.json({
       success: true,
       data: {
         configured: !!provider,
+        demoMode,
         provider: provider?.name || null,
         limits: executionLimits,
-        message: provider
+        message: demoMode
+          ? "Coding Demo Mode: No code execution or grading. Code and custom input are not processed. Demo actions do not affect scores, points, badges or analytics."
+          : provider
           ? "Code runs on the configured isolated provider."
           : "Execution setup required. Configure a trusted hardened Judge0 provider on the backend. Draft editing and saving remain available.",
       },

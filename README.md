@@ -23,6 +23,55 @@ Open `http://localhost:5173`. The API listens on port 4000. Vite proxies `/api` 
 
 The API development process uses Nodemon with `server/nodemon.json` to watch only TypeScript files under `server/src`, running them through `tsx` without its dependency watcher. Source edits, additions, and deletions restart the API. Dependency directories, build outputs, generated files, logs, caches, temporary files, and common editor backup files are excluded. The root development command still runs the API and Vite together. Changes to `.env` or watcher configuration require a manual restart. A short proxy disconnect during an intentional source-code restart is expected; dependency/build changes should not restart the API.
 
+## Coding Demo Mode (development only)
+
+For a ₹0 hackathon demonstration, use the existing authenticated Student coding
+workspace without an execution provider. In your existing private `server/.env`
+(or injected backend environment), set:
+
+```dotenv
+NODE_ENV=development
+CODING_DEMO_MODE=true
+```
+
+Keep your dedicated development MongoDB connection: authentication, published
+problems and saved drafts still require it. Never use production data for a demo.
+Do not overwrite an existing private configuration file. Restart `npm run dev`
+after changing the flag, sign in as Student, and open Coding practice. Open a
+published challenge for **Demo Submit**. If your dedicated development database
+has no problems, follow the existing explicit `seed:coding` instructions and
+matching `CODING_SEED_DATABASE` safeguard; nothing is seeded automatically.
+
+A visible **Coding Demo Mode** badge identifies the workflow. Monaco, the plain
+text fallback, Python/Java/C++/JavaScript selection, custom input and private draft
+saving remain available. **Demo Run** shows the fixed illustrative text
+`Hello, world!`, unrelated to the entered source or input. It explicitly says:
+“Demo Mode: Code was not executed. This is an illustrative output only.”
+
+**Demo Submit** returns a temporary receipt naming the selected published problem
+and language: “Demo submission only. No code execution or grading occurred.”
+Receipts are not saved and disappear on reload or language/problem changes. Demo
+endpoints validate input but never execute, compile, process custom input, call
+Judge0, read hidden tests, grade, or create real coding submissions. They do not
+record activity or affect correctness scores, coding analytics, leaderboard
+points, streaks or badges. Draft saving still persists the Student's own draft.
+The existing Student authentication, role checks, CSRF/origin protections and
+per-Student request limits apply. A database outage still blocks private features.
+
+Demo Mode is **off by default**, accepts only explicit `true`, and is forced off
+outside `NODE_ENV=development`, including production. To disable it, remove the
+setting or set `CODING_DEMO_MODE=false`, then restart the backend. Without a real
+provider, Run/Submit return to their existing setup-required disabled state.
+
+Real Judge0 integration is preserved. Later, disable Demo Mode, configure a genuine
+trusted hardened CE-compatible provider using the existing backend-only
+`JUDGE0_URL`/`JUDGE0_API_KEY` settings, and verify its isolation and supported
+language IDs before an authorized operator enables `JUDGE0_SECURITY_CONFIRMED`.
+This demo feature does not change that flag or weaken the provider gate. Real
+Run/Submit remain separate from demo endpoints; live provider execution has not
+been verified by this work. No account, paid service or provider credential is
+required for Demo Mode.
+
 ## MongoDB Atlas
 
 Follow [docs/MONGODB_ATLAS.md](docs/MONGODB_ATLAS.md). Create an Atlas database user with read/write permission to `cypher`, permit the backend machine's outbound IP, and put the Atlas-supplied URI in **server/.env**. Use a separate development database for demo users. `npm run db:check` connects and sends a read-only ping without printing credentials.

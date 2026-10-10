@@ -10,6 +10,7 @@ import {
   updateCompanyProgress,
 } from "../controllers/companies.js";
 import { problemControllers } from "../controllers/codingProblems.js";
+import { codingDemoControllers } from "../controllers/codingDemo.js";
 import { codingControllers } from "../controllers/coding.js";
 import type { ExecutionProvider } from "../services/codeExecution.js";
 import { Router } from "express";
@@ -55,6 +56,7 @@ export function studentRoutes(
   provider?: InterviewProvider,
   execution?: ExecutionProvider,
   executionRateLimit = 10,
+  codingDemoMode = false,
 ) {
   const router = Router();
   router.use((_req, res, next) => {
@@ -131,7 +133,7 @@ export function studentRoutes(
   router.get("/leaderboard", leaderboard);
   router.get("/leaderboard/options", leaderboardOptions);
   router.get("/leaderboard/:id", leaderboardProfile);
-  const coding = codingControllers(execution);
+  const coding = codingControllers(execution, codingDemoMode);
   const codeLimit = rateLimit({
     windowMs: 60000,
     limit: executionRateLimit,
@@ -148,6 +150,9 @@ export function studentRoutes(
   router.get("/coding/drafts/:scope", coding.draft);
   router.put("/coding/drafts/:scope", coding.save);
   router.post("/coding/run", codeLimit, coding.run);
+  const demo = codingDemoControllers(codingDemoMode);
+  router.post("/coding/demo/run", codeLimit, demo.run);
+  router.post("/coding/demo/problems/:id/submissions", codeLimit, demo.submit);
   const problems = problemControllers(execution);
   router.get("/coding/problems", problems.list);
   router.get("/coding/problems/:id", problems.detail);

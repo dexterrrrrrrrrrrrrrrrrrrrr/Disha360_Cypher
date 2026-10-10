@@ -214,13 +214,15 @@ export function CodingChallenge() {
                 </div>
               ))}
               <p className="text-xs leading-5 text-slate-500">
-                Run uses your custom input, not hidden tests. Submit compares
+                With a real provider, Run uses your custom input, not hidden tests. Submit compares
                 outputs after normalizing line endings, trailing spaces/tabs per
                 line and final newlines; interior whitespace and case matter.
-                Hidden diagnostics are withheld.
+                Hidden diagnostics are withheld. Coding Demo Mode performs neither execution nor grading.
               </p>
             </section>
             <Workspace
+              key={id}
+              problemId={id}
               scope={`problem-${id}`}
               sample={p.examples[0]?.input || ""}
               onSubmit={submit}

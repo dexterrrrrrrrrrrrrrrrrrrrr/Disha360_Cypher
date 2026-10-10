@@ -73,6 +73,7 @@ if (env.MONGODB_URI) {
   );
 
 const app = createApp({
+  codingDemoMode: env.CODING_DEMO_MODE,
   executionProvider:
     env.JUDGE0_URL && env.JUDGE0_SECURITY_CONFIRMED
       ? new Judge0Provider(env.JUDGE0_URL, env.JUDGE0_API_KEY)

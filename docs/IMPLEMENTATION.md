@@ -696,3 +696,55 @@ docs/CHECKPOINTS.md
 docs/IMPLEMENTATION.md
 docs/UI_AUDIT.md
 ```
+
+
+## Development-only Coding Demo Mode
+
+The completed checkpoint implementation and real Judge0 adapter remain intact.
+`CODING_DEMO_MODE` defaults to false. Environment parsing forces it off outside
+development; application creation and demo handlers also enforce the development
+guard. No Judge0 security setting is changed.
+
+Authenticated Student routes:
+
+- `GET /api/v1/student/coding/config` adds a separate `demoMode` capability;
+  `configured` continues to describe the real execution provider.
+- `POST /api/v1/student/coding/demo/run` validates bounded code/input and a supported
+  language, then returns only a fixed, explicitly illustrative output. Source and
+  input are never evaluated or forwarded.
+- `POST /api/v1/student/coding/demo/problems/:id/submissions` validates input and
+  reads only a visible published problem's title/languages. It returns a temporary
+  `demo-` receipt, with no verdict, score, passed-test count or source. Unsupported
+  languages and unavailable problems are rejected. No receipt is persisted.
+
+Demo routes share existing database availability, authentication, Student role,
+CSRF/origin and per-Student rate-limit middleware. They do not import an executor,
+submission model, activity recorder or achievement service. Hidden tests are not
+selected. Real `/coding/run` and `/coding/problems/:id/submissions` are unchanged.
+Demo receipts cannot enter real submission history, grading, leaderboard, badges,
+streaks or analytics. Existing private draft writes are preserved.
+
+The frontend follows the backend capability, labels Demo Run/Demo Submit, shows
+an always-visible no-execution disclaimer and fixed illustrative-output panel,
+and renders a separate temporary receipt rather than a real graded result. Draft
+load failures disable actions; request errors use the existing accessible alert.
+The playground links users to published challenges for submission demonstrations.
+Monaco remains locally bundled, with the existing accessible plain text fallback.
+
+Local enable/disable instructions and future real-provider configuration are in
+README.md, “Coding Demo Mode (development only)”. A dedicated development MongoDB
+connection remains necessary; the mode does not bypass login or fabricate users.
+
+Validation for this change: `npm test` passed 225 server tests and 29 client tests
+(254 total), including six new backend/UI tests and all existing auth, Judge0,
+grading, engagement and checkpoint regression suites. `npm run typecheck` and
+`npm run build` passed. The existing Monaco bundle-size advisory remains.
+
+Headless Chromium, against the actual development API and a checksum-verified,
+disposable MongoDB 7.0.24 database, verified Student registration, Monaco editing
+and draft saving, Demo Run/Demo Submit in all four languages, receipt/disclaimer
+labels, receipt clearing and saved-draft restoration after reload, empty real
+submission history, rate-limit error feedback, and no document
+overflow at 320/375/768/1024/1440px. No page errors or external browser requests
+were observed. No production database, live execution provider or paid service
+was used. Live Judge0 execution remains unverified and unchanged.

@@ -6,6 +6,7 @@ dotenv.config({ path: fileURLToPath(new URL('../../.env', import.meta.url)), qui
 
 export const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+  CODING_DEMO_MODE: z.enum(['true', 'false']).default('false').transform(v => v === 'true'),
   PORT: z.coerce.number().int().min(1).max(65535).default(4000),
   CLIENT_ORIGIN: z.string().url().default('http://localhost:5173'),
   TRUST_PROXY: z.enum(['true', 'false']).default('false').transform(value => value === 'true'),
@@ -17,7 +18,7 @@ export const envSchema = z.object({
   MONGODB_URI: z.preprocess(value => value === '' ? undefined : value, z.string().regex(/^mongodb(?:\+srv)?:\/\//, 'Use a MongoDB connection URI').optional())
 }).superRefine((value, ctx) => {
   if (value.NODE_ENV === 'production' && !value.MONGODB_URI) ctx.addIssue({ code: 'custom', path: ['MONGODB_URI'], message: 'Required in production' });
-});
+}).transform(value => ({ ...value, CODING_DEMO_MODE: value.CODING_DEMO_MODE && value.NODE_ENV === 'development' }));
 
 const parsed = envSchema.safeParse(process.env);
 if (!parsed.success) {

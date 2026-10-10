@@ -23,6 +23,7 @@ export function createApp(options: {
   interviewProvider?: InterviewProvider;
   executionProvider?: ExecutionProvider;
   executionRateLimit?: number;
+  codingDemoMode?: boolean;
 }) {
   const app = express();
   app.locals.allowDemoAccounts = options.allowDemoAccounts ?? false;
@@ -62,6 +63,7 @@ export function createApp(options: {
       options.interviewProvider,
       options.executionProvider,
       options.executionRateLimit,
+      options.codingDemoMode === true && (process.env.NODE_ENV ?? "development") === "development" && !options.secureCookies,
     ),
   );
   app.use("/api/v1/staff", staffRoutes(options.clientOrigin, options.status));
