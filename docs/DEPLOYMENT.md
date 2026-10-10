@@ -92,6 +92,18 @@ with privately injected settings, or a Render operator shell. It only connects
 and pings, does not seed data, and omits credentials from its output. This task's
 local connectivity result does not certify connectivity from Render's network.
 
+For backend provider diagnostics, run `npm run providers:check` from the root.
+It reads the existing backend environment without rewriting `.env` and reports
+missing settings without printing values. With the manually selected Gemini key
+and model present, it uses Google's SDK to read model metadata and confirm the
+exact identifier supports generateContent. It never generates content, switches
+credentials/models, executes code or writes database records. Read-only model
+availability does not establish Free Tier eligibility or available generation
+quota. OneCompiler readiness checks only credentials/feature/demo settings; key
+validity, remaining credits and live execution remain explicitly unverified.
+Missing or unverifiable settings return a nonzero exit status. Configure keys
+through secure backend/cloud environment settings, not chat or frontend forms.
+
 ## Vercel instructions (execute only after deployment approval)
 
 1. Import the same repository, choose `main`, Framework Preset **Vite**, Root

@@ -844,3 +844,5 @@ responses are mocked; MongoDB tests use disposable instances. See
 `docs/IMPLEMENTATION.md` for endpoints, indexes and final verification evidence.
 
 Production deployment preparation and exact Render/Vercel settings are documented in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). Deployment requires separate approval.
+
+Run `npm run providers:check` for safe backend provider diagnostics. It verifies the configured Gemini model through read-only Google metadata when credentials exist, never generates content or executes code, and reports missing environment settings without printing secrets. OneCompiler credential validity and credit balance require separate account/live verification. Configure keys securely in environment settings; do not paste them into chat or overwrite your private `.env`.

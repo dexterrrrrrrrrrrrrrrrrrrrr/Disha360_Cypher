@@ -21,7 +21,8 @@
     "user:create": "npm run user:create -w server --",
     "seed:assessments": "npm run seed:assessments -w server",
     "seed:coding": "npm run seed:coding -w server",
-    "seed:companies": "npm run seed:companies -w server"
+    "seed:companies": "npm run seed:companies -w server",
+    "providers:check": "npm run providers:check -w server"
   },
   "devDependencies": {
     "concurrently": "^9.2.0"
