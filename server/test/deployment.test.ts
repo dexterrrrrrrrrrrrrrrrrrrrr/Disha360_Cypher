@@ -2,7 +2,7 @@ import { beforeAll, beforeEach, afterAll, expect, it } from 'vitest';
 import request from 'supertest';
 import { testDatabase, studentAccount } from './helpers/student.js';
 import { createApp } from '../src/app.js';
-import { envSchema } from '../src/config/env.js';
+import { envSchema, configurationErrorMessage } from '../src/config/env.js';
 const origin = 'https://disha.example.test';
 let db: Awaited<ReturnType<typeof testDatabase>>;
 beforeAll(async () => { db = await testDatabase(); }, 180000);
@@ -42,4 +42,19 @@ it('exposes readiness failures safely and trusts only one proxy hop', async () =
   expect((await request(api).get('/api/v1/ready')).status).toBe(200);
   const offline = createApp({ clientOrigin: origin, databaseConfigured: true, status: () => 'disconnected' });
   expect((await request(offline).get('/api/v1/ready')).status).toBe(503);
+});
+
+it('explains missing or malformed production CLIENT_ORIGIN without exposing configuration values', () => {
+  const settings = { NODE_ENV: 'production', MONGODB_URI: 'mongodb://localhost/fixture' };
+  for (const CLIENT_ORIGIN of [undefined, '', 'your-project.vercel.app', 'https://your-project.vercel.app/login', 'https://user:private-fixture-password@your-project.vercel.app']) {
+    const result = envSchema.safeParse({ ...settings, CLIENT_ORIGIN });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const message = configurationErrorMessage(result.error.issues);
+      expect(message).toContain('Set CLIENT_ORIGIN in Render Environment');
+      expect(message).not.toContain('private-fixture-password');
+    }
+  }
+  expect(envSchema.safeParse({ ...settings, CLIENT_ORIGIN: 'https://your-project.vercel.app' }).success).toBe(true);
+  expect(envSchema.safeParse({ ...settings, CLIENT_ORIGIN: 'https://your-project.vercel.app/' }).success).toBe(true);
 });
