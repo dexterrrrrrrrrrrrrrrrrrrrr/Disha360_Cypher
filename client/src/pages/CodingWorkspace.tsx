@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useEffect, useState, lazy, Suspense } from "react";
+import { useEffect, useState, useRef, lazy, Suspense } from "react";
 import { AppLayout } from "../layouts/AppLayout";
 import { templates, type Language } from "../features/coding/templates";
 const CodeEditor = lazy(() => import("../features/coding/Editor"));
@@ -7,11 +7,13 @@ import { useStudentData } from "../hooks/useStudentData";
 import { studentRequest } from "../services/student";
 import { PageHeading, ErrorNotice, Skeleton } from "../components/StudentUI";
 import { EditorBoundary } from "../components/EditorBoundary";
+import { CodingMentor } from '../features/coding/CodingMentor';
 export interface Execution {
   verdict: string;
   stdout: string;
   stderr: string;
   compileOutput: string;
+  exception?: string;
   timeSeconds: number | null;
   memoryKb: number | null;
   outputTruncated: boolean;
@@ -69,6 +71,7 @@ export function Workspace({
   const [retry, setRetry] = useState(0);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState("");
+  const actionLock = useRef(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [demoRun, setDemoRun] = useState<DemoRun | null>(null);
@@ -115,6 +118,8 @@ export function Workspace({
     };
   }, [scope, language, sample, retry]);
   async function act(kind: string) {
+    if (actionLock.current) return;
+    actionLock.current = true;
     setBusy(kind);
     setError("");
     setMessage("");
@@ -154,6 +159,7 @@ export function Workspace({
     } catch (e) {
       setError(e instanceof Error ? e.message : "Request failed.");
     } finally {
+      actionLock.current = false;
       setBusy("");
     }
   }
@@ -335,6 +341,7 @@ export function Workspace({
                 ["Standard output", execution.stdout],
                 ["Standard error", execution.stderr],
                 ["Compiler output", execution.compileOutput],
+                ['Runtime exception', execution.exception || ''],
               ].map(([label, text]) => (
                 <div className="mt-4" key={label}>
                   <h3 className="text-xs font-semibold">{label}</h3>
@@ -357,6 +364,8 @@ export function Workspace({
           )}
         </section>
       </div>
+      <CodingMentor language={language} source={source} problemId={problemId} disabled={!!busy || loading || loadFailed}
+        executionError={demoMode ? '' : execution ? ['Run status: ' + execution.verdict, 'Run stdout: ' + execution.stdout, 'Run stderr: ' + execution.stderr, 'Diagnostics: ' + execution.compileOutput, execution.exception || ''].join('\n') : ''}/>
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { UpcomingLiveClasses } from './LiveClasses';
 import { AppLayout } from "../layouts/AppLayout";
 import {
   PageHeading,
@@ -83,6 +84,7 @@ export function StaffDashboard({ role }: { role: "trainer" | "admin" }) {
                 </section>
               ))}
             </div>
+            <UpcomingLiveClasses role={role}/>
             <div className="mt-6 grid gap-6 lg:grid-cols-2">
               <section className="card">
                 <h2 className="text-lg font-semibold">

@@ -865,3 +865,156 @@ Created files:
 - `server/src/controllers/resumeSuggestions.ts`, `server/src/validators/resumeSuggestions.ts`
 - `server/test/geminiAI.test.ts`, `server/test/geminiWorkflows.test.ts`, `server/test/helpers/gemini.ts`
 - `client/src/features/resume/ResumeAISuggestions.tsx`, `client/test/resumeAIUI.test.tsx`
+
+## OneCompiler execution, Gemini Coding Mentor and SparkMeet classes
+
+This extension keeps the existing provider abstraction, coding drafts/problems/
+submissions, deterministic grading and reward consumers. `configureExecution`
+selects OneCompiler only with explicit enablement and a backend key; otherwise
+the original Judge0 gate remains. Missing selected configuration has no fallback.
+The OneCompiler direct contract was supplied by the user from official docs after
+network access failed (HTTP 403); no private keys or live paid calls were used.
+
+`OneCompilerProvider` sends the supplied fixed HTTPS endpoint/header and schema,
+never a caller-controlled URL. Central language/filename mapping, strict input
+limits, bounded streamed responses, abort/deadline, rate/concurrency/day caps and
+safe E001–E006/HTTP handling precede normalization. It recognizes either quota
+remaining field and stops future calls at zero. Batch responses require exact
+length and ordered echoed stdin; no missing or reordered result is invented.
+Oversized combined stdin is split into bounded batches with an overall submission
+deadline. `judgeSubmission` accepts optional provider batching, then applies the
+unchanged whitespace policy. It keeps deterministic aggregate results, saved
+request IDs, Student ownership, null scores for provider/system failures, and
+hidden-diagnostic suppression. Existing solved/progress/leaderboard/badge logic
+consumes genuine completed records without any AI grading changes.
+
+OneCompiler does not expose a portable exit/compilation status in the supplied
+contract. Nonempty diagnostics fail conservatively and their classification is
+heuristic; stderr-writing successful programs may be rejected. No worker CPU,
+memory or egress guarantees were independently verified. Request timeouts bound
+the LMS wait, not remote work. Caps are per-process attempt limits, not durable
+Google/OneCompiler quotas or rupee caps. Check account credits/billing externally.
+The current problem model is stdin/stdout-only; no function-test harness is invented.
+
+`GeminiAIService.codingMentor` uses the same immutable SDK client, model/key
+selection and shared limits as interviews/resume suggestions. Its strict context
+contains code/language/action, progressive hint level, explicit full-solution
+opt-in, public problem fields and displayed Run diagnostics only. Hidden tests,
+test results and source from other Student records are not read. Output schema
+contains explanation/nextSteps, no grading fields. The panel requires data-sharing
+consent, discards stale responses on source/context changes and never saves code
+edits, awards or submissions. Model identifiers (including a proposed Gemini 3.8
+Flash) are not guessed; private configuration was untouched.
+
+### API additions and existing endpoints extended
+
+All routes use existing authentication/roles, origin/CSRF and private no-store
+responses. Prefixes below are `/api/v1/student` and `/api/v1/staff` respectively.
+
+| Scope | Method/path | Behavior |
+| --- | --- | --- |
+| Student | GET `/coding/config` | Selected executor/configuration; truthful provider-managed limits |
+| Student | POST `/coding/run` | Real OneCompiler run through existing execution interface |
+| Student | POST `/coding/problems/:id/submissions` | Authoritative backend batch grading/persistence |
+| Student | GET `/coding/submissions`, GET `/coding/submissions/:id` | Existing private aggregate history |
+| Student | GET `/coding/mentor/config` | Mentor capability, without credentials |
+| Student | POST `/coding/mentor` | Validated public context and shared Gemini advice |
+| Student | GET `/live-classes` | Classes and own attendance in active enrolled batches |
+| Student | GET `/live-classes/:id` | Authorized meeting, notes/resources and own attendance |
+| Staff | GET `/live-classes` | Owned/assigned trainer scope or all Admin classes, real analytics |
+| Staff | GET `/live-classes/:id` | Scoped meeting details, enrollment roster and attendance |
+| Staff | POST `/live-classes` | Versioned scheduling with creator-scoped idempotency UUID |
+| Staff | PUT `/live-classes/:id` | Scoped editing/assignment with optimistic version checks |
+| Staff | POST `/live-classes/:id/cancel` | Cancellation/version guard; links withheld afterward |
+| Staff | PUT `/live-classes/:id/attendance` | Enrollment-validated manual observations after start |
+
+Class list query supports `view=all|upcoming` (strictly validated). Lists are bounded
+at 100 entries with truncation indication; dashboards request nearest upcoming/
+currently scheduled-live classes. Analytics count the complete authorized scope,
+not just the displayed page. Status uses start + duration, never video telemetry.
+
+### Live-class model and authorization
+
+New `LiveClass` stores title, description, batchId, trainerId, createdBy, requestId,
+private requestFingerprint/meetingUrl, startsAt, durationMinutes, cancelled,
+optimistic version, notes, resource links and embedded manual attendance entries
+(studentId/status/note/recordedBy/recordedAt). Indexes are unique creator/requestId,
+batch/start and trainer/start; normal startup ensures them alongside existing
+indexes. Existing Batch/Enrollment/User schemas and connection remain unchanged.
+
+Trainers can operate only their own classes in actively assigned batches; Admins
+may assign only real Trainers in the chosen batch. Students need current active
+enrollment and an active batch for both list/detail access; revocation removes LMS
+access, including previous class details. They receive only their attendance,
+never other students' roster/records. Attendance edits merge observations by
+student with version checks; duplicate/unrelated attendees, future or cancelled
+class updates are rejected. Opening a link does not create any attendance record.
+After start, schedule/batch/trainer changes are rejected; notes/resources remain
+editable. Completed classes cannot be cancelled; cancelled classes cannot be edited.
+Creation retries have identical fingerprints or return conflict, not duplicate rows.
+
+SparkMeet integration stores actual operator-supplied links on the fixed origin and
+opens a separate tab. No verified API/embed/token/SSO documentation was available;
+no such capability or automatic room creation/attendance is claimed. Additional
+mentorship is intentionally outside this core implementation. Resource links use
+HTTPS; external sites have their own privacy/security policies. Detailed setup,
+limits, costs and provider caveats are documented in README.md.
+
+### Changed-file inventory
+
+- `README.md`
+- `client/src/features/coding/CodingMentor.tsx`
+- `client/src/hooks/useStaffData.ts`
+- `client/src/layouts/AppLayout.tsx`
+- `client/src/main.tsx`
+- `client/src/pages/CodingWorkspace.tsx`
+- `client/src/pages/LiveClasses.tsx`
+- `client/src/pages/StaffDashboard.tsx`
+- `client/src/pages/StudentDashboard.tsx`
+- `client/test/liveCodingUI.test.tsx`
+- `docs/IMPLEMENTATION.md`
+- `server/.env.example`
+- `server/src/app.ts`
+- `server/src/config/env.ts`
+- `server/src/controllers/coding.ts`
+- `server/src/controllers/codingMentor.ts`
+- `server/src/controllers/codingProblems.ts`
+- `server/src/controllers/liveClasses.ts`
+- `server/src/index.ts`
+- `server/src/models/LiveClass.ts`
+- `server/src/routes/staff.ts`
+- `server/src/routes/student.ts`
+- `server/src/services/codeExecution.ts`
+- `server/src/services/codingJudge.ts`
+- `server/src/services/executionProvider.ts`
+- `server/src/services/geminiAI.ts`
+- `server/src/services/interviewProvider.ts`
+- `server/src/services/oneCompiler.ts`
+- `server/src/validators/codingMentor.ts`
+- `server/src/validators/liveClass.ts`
+- `server/test/codingMentor.test.ts`
+- `server/test/liveClasses.test.ts`
+- `server/test/oneCompiler.test.ts`
+- `server/test/oneCompilerWorkflows.test.ts`
+
+### Verification
+
+The final implementation adds 64 focused tests to the existing 288-test suite.
+The full suite passed 352 tests (317 server, 35 client), with no failures.
+`npm run typecheck` and `npm run build` passed; the existing lazy Monaco
+bundle-size advisory remains. Tests cover direct-API language mapping, batch
+ordering/chunking, output/UTF-8 limits, E001–E006, HTTP/network/timeout/quota
+errors, no retries/fallbacks, hidden grading/history, demo and Judge0 gates,
+mentor hints/context/limits/errors/no grading, and class ownership/enrollment,
+admin assignments, URL/date/version/idempotency/attendance protections.
+
+Chromium exercised real authenticated React/Express workflows against a disposable
+MongoDB database and mocked OneCompiler/Gemini transports (the real shared Google
+SDK was used). Scheduling, editing/notes/resources, cancellation, Student batch
+isolation, manual attendance, Admin totals, Run output/runtime errors, progressive
+hints and quota messages, deterministic hidden batch grading and submission
+history passed. Representative layouts passed at 320, 375, 768 and 1440 pixels
+without overflow; there were no page errors or external browser requests. These
+checks do not verify live credentials, credits, external worker security or actual
+SparkMeet video rooms. No production records, private .env files, credentials,
+commits or pushes were changed/created by this implementation.

@@ -4,7 +4,7 @@ import { Company, CompanyProgress } from "./models/Company.js";
 import { LearningModule } from "./models/LearningModule.js";
 import { CodingProblem } from "./models/CodingProblem.js";
 import { CodingSubmission } from "./models/CodingSubmission.js";
-import { Judge0Provider } from "./services/codeExecution.js";
+import { configureExecution } from './services/executionProvider.js';
 import { CodeDraft } from "./models/CodeDraft.js";
 import { env } from "./config/env.js";
 import { connectDatabase, disconnectDatabase } from "./config/database.js";
@@ -25,6 +25,7 @@ import { Question, Assessment, TestAttempt } from "./models/Assessment.js";
 import { sweepExpiredAttempts } from "./services/assessments.js";
 import { databaseStatus } from "./config/database.js";
 import { Batch, Enrollment } from "./models/Batch.js";
+import { LiveClass } from './models/LiveClass.js';
 
 if (env.MONGODB_URI) {
   try {
@@ -59,6 +60,7 @@ if (env.MONGODB_URI) {
       TestAttempt.createIndexes(),
     ]);
     await Promise.all([Batch.createIndexes(), Enrollment.createIndexes()]);
+    await LiveClass.createIndexes();
     console.log("MongoDB connected.");
   } catch {
     await disconnectDatabase();
@@ -73,12 +75,11 @@ if (env.MONGODB_URI) {
   );
 
 const ai = configureAI(env);
+const execution = configureExecution(env);
 const app = createApp({
   codingDemoMode: env.CODING_DEMO_MODE,
-  executionProvider:
-    env.JUDGE0_URL && env.JUDGE0_SECURITY_CONFIRMED
-      ? new Judge0Provider(env.JUDGE0_URL, env.JUDGE0_API_KEY)
-      : undefined,
+  executionProvider: execution.provider,
+  executionSetupMessage: execution.message,
   clientOrigin: env.CLIENT_ORIGIN,
   databaseConfigured: Boolean(env.MONGODB_URI),
   secureCookies: env.NODE_ENV === "production",

@@ -12,7 +12,7 @@ import {
   type ExecutionProvider,
 } from "../services/codeExecution.js";
 import { AppError } from "../utils/AppError.js";
-export function codingControllers(provider?: ExecutionProvider, demoMode = false) {
+export function codingControllers(provider?: ExecutionProvider, demoMode = false, setupMessage?: string) {
   const config: RequestHandler = (_req, res) =>
     res.json({
       success: true,
@@ -20,12 +20,12 @@ export function codingControllers(provider?: ExecutionProvider, demoMode = false
         configured: !!provider,
         demoMode,
         provider: provider?.name || null,
-        limits: executionLimits,
+        limits: provider?.name === 'OneCompiler' ? { outputBytes: executionLimits.outputBytes, timeoutMs: 20000, isolationLimits: 'Provider-managed; no application-enforced CPU, memory or network sandbox guarantees.' } : executionLimits,
         message: demoMode
           ? "Coding Demo Mode: No code execution or grading. Code and custom input are not processed. Demo actions do not affect scores, points, badges or analytics."
           : provider
-          ? "Code runs on the configured isolated provider."
-          : "Execution setup required. Configure a trusted hardened Judge0 provider on the backend. Draft editing and saving remain available.",
+          ? `Code runs on ${provider.name}. Run output is not a judged solution. Code and input are shared with the execution provider.`
+          : setupMessage || "Execution setup required. Configure OneCompiler or a trusted hardened Judge0 provider on the backend. Draft editing and saving remain available.",
       },
     });
   const draft: RequestHandler = async (req, res) => {

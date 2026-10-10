@@ -23,6 +23,7 @@ export function createApp(options: {
   interviewProvider?: InterviewProvider;
   aiSetupMessage?: string;
   executionProvider?: ExecutionProvider;
+  executionSetupMessage?: string;
   executionRateLimit?: number;
   codingDemoMode?: boolean;
 }) {
@@ -66,6 +67,7 @@ export function createApp(options: {
       options.executionRateLimit,
       options.codingDemoMode === true && (process.env.NODE_ENV ?? "development") === "development" && !options.secureCookies,
       options.aiSetupMessage,
+      options.executionSetupMessage,
     ),
   );
   app.use("/api/v1/staff", staffRoutes(options.clientOrigin, options.status));

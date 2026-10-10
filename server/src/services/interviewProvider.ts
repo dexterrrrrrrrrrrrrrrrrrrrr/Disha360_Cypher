@@ -6,7 +6,8 @@ import { feedbackJsonSchema, feedbackSchema } from '../validators/feedback.js';
 import { answeredQuestions } from './interviewFeedback.js';
 import { interviewQuestionInstructions, interviewFeedbackInstructions } from './aiPrompts.js';
 import type { ResumeSuggestionInput, ResumeSuggestions } from '../validators/resumeSuggestions.js';
-export interface InterviewProvider { name: string; question(setup: InterviewSetup, transcript: InterviewMessage[]): Promise<string>; feedback?(setup: InterviewSetup, transcript: InterviewMessage[]): Promise<unknown>; resumeSuggestions?(input: ResumeSuggestionInput): Promise<ResumeSuggestions> }
+import type { MentorContext, MentorResponse } from '../validators/codingMentor.js';
+export interface InterviewProvider { name: string; question(setup: InterviewSetup, transcript: InterviewMessage[]): Promise<string>; feedback?(setup: InterviewSetup, transcript: InterviewMessage[]): Promise<unknown>; resumeSuggestions?(input: ResumeSuggestionInput): Promise<ResumeSuggestions>; codingMentor?(input: MentorContext): Promise<MentorResponse> }
 const outputSchema = z.object({ question: z.string().trim().min(10).max(1500) }).strict();
 export class OpenAIInterviewProvider implements InterviewProvider {
   readonly name = 'OpenAI Responses API';

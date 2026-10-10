@@ -699,3 +699,146 @@ Final browser matrix: **55 role-specific route views at 320, 375, 768, 1024 and
 1440px (275 layout checks)**. No remaining axe WCAG violations, document overflow
 or unexpected runtime/console errors after corrected findings and targeted reruns.
 The full route/finding checklist is in `docs/UI_AUDIT.md`.
+
+## OneCompiler, Coding Mentor and SparkMeet live classes
+
+The existing editor, drafts, challenge/submission models, deterministic judging,
+progress, badges and analytics remain in use. Judge0 is preserved behind
+`JUDGE0_SECURITY_CONFIRMED=false`; Coding Demo Mode remains development-only and
+its separate demo endpoints never call an execution provider or save submissions.
+Disable `CODING_DEMO_MODE` to use real Run/Submit buttons. No student code runs on
+the Disha360 server, and Gemini never grades a coding submission.
+
+### Local configuration
+
+1. Run `npm ci` using the project's supported Node.js version (22.12 or newer).
+2. Keep your recovered private `server/.env` and existing database connection.
+   Add settings locally without overwriting the file; this implementation did not
+   modify it. Keep real keys out of Git, React, logs and screenshots.
+3. Review your OneCompiler account's credits, billing/recharge behavior and worker
+   security. For a ₹0 budget, verify remaining free credits and prevent paid
+   purchases/recharges externally before enabling execution. The application
+   cannot inspect billing state or guarantee a rupee cap from a key.
+4. Configure the following backend settings privately and restart the backend:
+
+```dotenv
+ONECOMPILER_API_KEY=
+ONECOMPILER_ENABLED=false
+ONECOMPILER_MAX_EXECUTIONS_PER_DAY=100
+```
+
+Fill your existing key and explicitly set `ONECOMPILER_ENABLED=true` when ready.
+This provider takes precedence over Judge0; missing credentials never silently
+fall back. With OneCompiler disabled, the existing Judge0 security gate still
+applies. No billing, accounts, paid resources or real external test calls were
+created here. The daily limit counts testcase attempts per process/UTC day, not
+credits; failures count, and restarting or multiple instances affect that local
+limit. Set a lower limit for your allowance. It is not a durable monetary budget.
+
+5. Keep the existing Gemini settings unchanged. The mentor uses `AI_PROVIDER=gemini`,
+   `GEMINI_API_KEY`, `GEMINI_API_KEY_BACKUP`, `GEMINI_MODEL`, and
+   `GEMINI_KEY_SELECTION=primary|backup`. Only the manually selected key/model is
+   used; configuration changes require restart. No model was guessed or switched:
+   the proposed “Gemini 3.8 Flash” API identifier and current Free Tier eligibility
+   remain unverified. Follow the Gemini setup/privacy section above.
+6. Run `npm run dev`. Sign in as Student and open Coding practice. Use Run with
+   custom stdin, or open a published challenge and Submit. History shows only
+   genuine backend-evaluated results; API failures save no successful verdict.
+7. For classes, use existing Admin batch management to assign a Trainer and enroll
+   Students. A Trainer opens **Live classes → Schedule Live Class**, chooses their
+   batch, title, description, local start date/time, duration and a meeting link
+   independently obtained from SparkMeet. Admins can also assign batch trainers.
+   Save, edit notes/resources, launch or cancel from class details. Students see
+   their enrolled batches on Overview and Live classes, open details, and join in
+   a new tab. Attendance history is visible in the class list/details.
+8. After a class starts, its Trainer or authorized Admin selects present, absent
+   or excused from their observation and saves manual attendance. Opening a link
+   does not mark attendance. Students see only their own attendance.
+
+### Execution contract and limitations
+
+The direct API uses `POST https://api.onecompiler.com/v1/run`, JSON and the
+backend-only `X-API-Key` header. Its request is `language`, `stdin`, and
+`files: [{ name, content }]`. Identifiers are `python`, `java`, `cpp`, and
+`javascript`; filenames are `main.py`, a conventional public Java type's name
+(`Main.java` otherwise), `main.cpp`, and `main.js`. Single-file Java projects with
+complex packaging/annotations or multiple public top-level types may need
+adaptation; no local compiler is used to infer a launch target.
+
+Source/standard input use the existing 30,000/10,000-character validation plus a
+40,000-byte encoded request cap. Runs have a 20-second deadline. Batches contain
+at most ten tests and 10,000 combined stdin characters per provider call; larger
+legitimate test sets are split conservatively. Responses are capped at 250,000
+bytes, each displayed output at 16 KiB, and provider calls at ten/minute and two
+concurrent calls per backend process. Existing per-Student route limits remain.
+No retries or alternate paid execution provider are selected automatically.
+
+Run displays stdout, stderr, compilation diagnostics, runtime exceptions and any
+reported metrics (milliseconds are converted to seconds; memory is KB). A run
+finishing is not proof of solving a problem. Submit reads authoritative hidden
+stdin/stdout tests from MongoDB, sends inputs only to OneCompiler, validates batch
+length and echoed stdin ordering, and compares stdout locally. Expected answers
+are never sent to the provider. Normalization converts CRLF/CR to LF, strips
+trailing spaces/tabs on each line and trailing newlines; leading/interior spaces
+and letter case remain significant. Current problems use stdin/stdout, not
+function-signature harnesses. Submit returns aggregate passed/total/verdict/score,
+never hidden inputs, expected/actual outputs or hidden compiler/runtime details.
+Partial/malformed/infrastructure-failed grading has a null score and cannot count
+as solved. Request IDs prevent duplicate submission work and existing analytics
+consume the completed records normally.
+
+`status: "success"` alone never proves successful execution or correctness. The
+supplied contract exposes no exit code or portable compilation-vs-runtime code.
+The adapter fails conservatively on stderr/exceptions; classification of actual
+diagnostic text is heuristic, so successful programs intentionally printing to
+stderr can be rejected. Empty stdout is valid and compared normally. E001–E006,
+HTTP errors, quotas, timeouts and malformed output produce safe messages. Either
+documented remaining-credit field is recognized; a zero value prevents subsequent
+calls in that process. The deadline does not prove a remote job was terminated.
+CPU, memory, filesystem and network isolation are provider-managed and were not
+independently verified; Judge0's enforced limits are not claimed for OneCompiler.
+
+The endpoint/header/schema, batch behavior, E001–E006, 100 introductory credits,
+input allowances and pricing were supplied by the user from the
+[official OneCompiler documentation](https://onecompiler.com/api). Independent
+access here returned proxy HTTP 403. Credit consumption is not assumed to be one
+credit per call/test. Verify account-specific terms and limits before live use.
+
+### Coding Mentor and SparkMeet safeguards
+
+The mentor offers code/error explanations, debug/optimization advice, complexity
+analysis, solution approaches and three progressive hint levels. Full solutions
+require explicit opt-in; mentor data sharing requires an unchecked consent box.
+Only editor code, public problem fields and user-visible Run diagnostics are sent,
+never backend hidden tests or demo output. Advice is labeled unexecuted/unverified,
+rendered as text and does not create scores, submissions or rewards. It shares
+the existing Gemini timeout, schema validation, ten-per-minute/two-concurrent
+limits, plus five requests/minute per Student and an 1,800-output-token cap.
+
+SparkMeet URLs are restricted to the exact HTTPS origin
+`https://sparkmeet-web.onrender.com`; credential-bearing URLs, lookalike domains,
+other protocols/ports and control characters are rejected. Links open in a new
+tab with `noopener noreferrer` and no referrer. No extra SparkMeet environment
+settings are needed. The app and integration documentation were inaccessible
+(proxy HTTP 403), so embedding, meeting-creation APIs, deep-link parameters,
+SSO/tokens and in-room access controls remain **unverified**. Disha360 neither
+generates room URLs nor claims to secure participation inside SparkMeet. Trainers
+must verify actual room links and SparkMeet access controls themselves. No WebRTC
+system, guessed API, fake attendance or optional mentorship workflow was added.
+Live/Completed describes the stored schedule, not detected video activity.
+Cancelling an LMS class hides its link; it does not terminate a SparkMeet room.
+Saved manual attendance remains visible to authorized staff and counts in totals,
+including records from cancelled classes or previously enrolled Students.
+
+Class APIs retain existing role/session, origin/CSRF, no-store, database and rate
+protections. Students need active enrollment in an active batch; trainers need
+both class ownership and assignment to that active batch. Admins manage all
+classes. Private meeting URLs appear only in authorized details and are omitted
+for cancelled classes. Updates use version checks; duplicate create requests are
+idempotent. Notes/resources are text/HTTPS links; attendance is validated against
+enrollment and records the operator/time. These checks cannot revoke a link
+already shared outside the LMS.
+
+Testing commands: `npm test`, `npm run typecheck`, `npm run build`. External
+responses are mocked; MongoDB tests use disposable instances. See
+`docs/IMPLEMENTATION.md` for endpoints, indexes and final verification evidence.

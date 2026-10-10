@@ -6,7 +6,7 @@ export const staffRequest = <T>(
   path: string,
   options: Parameters<typeof studentRequest>[1] = {},
 ) => studentRequest<T>(path, { ...options, prefix: "/api/v1/staff" });
-export function useStaffData<T>(path: string | null) {
+export function useStaffData<T>(path: string | null, prefix = '/api/v1/staff') {
   const [data, setData] = useState<T | null>(null),
     [loading, setLoading] = useState(true),
     [error, setError] = useState("");
@@ -27,7 +27,7 @@ export function useStaffData<T>(path: string | null) {
     setLoading(true);
     setError("");
     try {
-      const result = await staffRequest<T>(path, { signal: c.signal });
+      const result = await studentRequest<T>(path, { signal: c.signal, prefix });
       if (!c.signal.aborted) setData(result);
     } catch (e) {
       if (!c.signal.aborted) {
@@ -38,7 +38,7 @@ export function useStaffData<T>(path: string | null) {
     } finally {
       if (!c.signal.aborted) setLoading(false);
     }
-  }, [path]);
+  }, [path, prefix]);
   useEffect(() => {
     setData(null);
     void reload();

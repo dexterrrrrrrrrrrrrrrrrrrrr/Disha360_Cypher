@@ -1,4 +1,5 @@
 import { Leaderboard } from "./pages/Leaderboard";
+import { LiveClasses, LiveClassDetails } from './pages/LiveClasses';
 import { RouteAccessibility } from "./components/RouteAccessibility";
 import { Achievements, LeaderboardProfile } from "./pages/Achievements";
 import { StaffAssignmentDirectory } from "./pages/StaffAssignmentDirectory";
@@ -53,6 +54,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route element={<ProtectedRoute role="student" />}>
+            <Route path="/live-classes" element={<LiveClasses role="student"/>}/>
+            <Route path="/live-classes/:id" element={<LiveClassDetails role="student"/>}/>
             <Route path="/dashboard/student" element={<StudentDashboard />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/leaderboard/:id" element={<LeaderboardProfile />} />
@@ -81,6 +84,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           </Route>
           {(["trainer", "admin"] as const).map((role) => (
             <Route key={role} element={<ProtectedRoute role={role} />}>
+              <Route path={`/manage/${role}/live-classes`} element={<LiveClasses role={role}/>}/>
+              <Route path={`/manage/${role}/live-classes/:id`} element={<LiveClassDetails role={role}/>}/>
               <Route
                 path={`/manage/${role}/leaderboard`}
                 element={<Leaderboard role={role} />}

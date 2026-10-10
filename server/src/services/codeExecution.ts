@@ -19,6 +19,7 @@ export interface ExecutionResult {
   stdout: string;
   stderr: string;
   compileOutput: string;
+  exception?: string;
   timeSeconds: number | null;
   memoryKb: number | null;
   outputTruncated: boolean;
@@ -26,6 +27,7 @@ export interface ExecutionResult {
 export interface ExecutionProvider {
   name: string;
   execute(input: CodeInput): Promise<ExecutionResult>;
+  executeBatch?(input: Omit<CodeInput, 'stdin'>, stdin: string[]): Promise<ExecutionResult[]>;
 }
 export const languageIds = {
   python: 71,

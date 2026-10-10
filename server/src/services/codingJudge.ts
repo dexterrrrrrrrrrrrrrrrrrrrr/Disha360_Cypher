@@ -52,21 +52,26 @@ export async function judgeSubmission(
     time: number | null = null,
     memory: number | null = null;
   try {
+    if (!tests.length) throw new Error('No authoritative tests');
+    const batchResults = provider.executeBatch ? await provider.executeBatch({ language: input.language, source: input.source }, tests.map(t => t.input)) : undefined;
+    if (batchResults && batchResults.length !== tests.length) throw new Error('Incomplete batch');
+    let index = 0;
     for (const t of tests) {
-      if (Date.now() > s.processingUntil.getTime() - 20000)
+      if (Date.now() > s.processingUntil.getTime() - (batchResults ? 0 : 20000))
         throw new Error("Judging deadline");
-      const result = await provider.execute({ ...input, stdin: t.input });
+      const result = batchResults ? batchResults[index++] : await provider.execute({ ...input, stdin: t.input });
       if (result.timeSeconds !== null)
         time = Math.max(time ?? 0, result.timeSeconds);
       if (result.memoryKb !== null)
         memory = Math.max(memory ?? 0, result.memoryKb);
       if (result.verdict !== "Accepted") {
-        verdict = result.verdict;
-        break;
+        if (verdict === 'Accepted' || verdict === 'Wrong Answer') verdict = result.verdict;
+        if (!batchResults) break;
+        continue;
       }
       if (normalizeOutput(result.stdout) === normalizeOutput(t.expected))
         passed++;
-      else verdict = "Wrong Answer";
+      else if (verdict === 'Accepted') verdict = "Wrong Answer";
     }
   } catch {
     verdict = "System Error";
