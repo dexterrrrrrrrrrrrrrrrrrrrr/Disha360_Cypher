@@ -14,14 +14,16 @@ async function setup() {
   await seedCoding('development'); const p = (await CodingProblem.findOne({ difficulty: 'easy' }).select('+hiddenTests'))!;
   const fetcher = vi.fn().mockImplementation(async (_url: string, options: RequestInit) => {
     const body = JSON.parse(options.body as string);
-    return new Response(JSON.stringify(body.stdin.map((stdin: string) => ({ status: 'success', stdin, stdout: String(stdin.trim().split(/\s+/).map(Number).reduce((a, b) => a + b, 0)) + '\n', stderr: null, exception: null, executionTime: 9 }))));
+    const values = Array.isArray(body.stdin) ? body.stdin : [body.stdin];
+    const results = values.map((stdin: string) => ({ status: 'success', stdin, stdout: String(stdin.trim().split(/\s+/).map(Number).reduce((a, b) => a + b, 0)) + '\n', stderr: null, exception: null, executionTime: 9 }));
+    return new Response(JSON.stringify(Array.isArray(body.stdin) ? results : results[0]));
   });
   const provider = new OneCompilerProvider('fixture-only-key', fetcher);
   const app = createApp({ clientOrigin: 'http://localhost:5173', databaseConfigured: true, allowDemoAccounts: true, executionProvider: provider });
   return { app, p, fetcher, s: await studentAccount() };
 }
-it('batch grades authoritative hidden tests, persists owned history, updates existing metrics and deduplicates', async () => {
-  const { app, p, fetcher, s } = await setup(), body = { source: 'fixture program', language: 'python', requestId: randomUUID() };
+it.each(['python', 'java', 'cpp', 'javascript'])('batch grades %s authoritative hidden tests, persists owned history, updates metrics and deduplicates', async language => {
+  const { app, p, fetcher, s } = await setup(), body = { source: 'fixture program', language, requestId: randomUUID() };
   const path = `/coding/problems/${p.id}/submissions`; const r = await studentCall(app, s.cookie, 'post', path, body);
   expect(r.status).toBe(201); expect(r.body.data.submission).toMatchObject({ verdict: 'Accepted', passed: 3, total: 3, score: 100 });
   expect(fetcher).toHaveBeenCalledTimes(1); expect(JSON.parse(fetcher.mock.calls[0][1].body).stdin).toEqual(p.hiddenTests.map(t => t.input));
@@ -62,4 +64,15 @@ it('never invokes the real provider for Demo Run or Demo Submit', async () => {
   const receipt = await studentCall(app, s.cookie, 'post', `/coding/demo/problems/${p.id}/submissions`, { language: 'python', source: 'fixture' });
   expect(receipt.body.data.demoReceipt.message).toContain('No code execution or grading occurred');
   expect(fetcher).not.toHaveBeenCalled(); expect(await CodingSubmission.countDocuments()).toBe(0);
+});
+
+it.each(['python', 'java', 'cpp', 'javascript'])('runs %s through authenticated backend with custom stdin and safe real-result transport', async language => {
+  const { app, fetcher, s } = await setup();
+  const r = await studentCall(app, s.cookie, 'post', '/coding/run', { language, source: 'fixture source', stdin: '2 3' });
+  expect(r.status).toBe(200); expect(r.body.data.execution).toMatchObject({ verdict: 'Accepted', stdout: '5\n', timeSeconds: 0.009 });
+  const body = JSON.parse(fetcher.mock.calls[0][1].body);
+  expect(body).toMatchObject({ language, stdin: '2 3' });
+  expect(fetcher.mock.calls[0][1].headers['X-API-Key']).toBe('fixture-only-key');
+  expect(JSON.stringify(r.body)).not.toContain('fixture-only-key');
+  expect(await CodingSubmission.countDocuments()).toBe(0);
 });

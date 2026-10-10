@@ -36,9 +36,17 @@ export const envSchema = z.object({
   }
 }).transform(value => ({ ...value, CODING_DEMO_MODE: value.CODING_DEMO_MODE && value.NODE_ENV === 'development' }));
 
+export function configurationErrorMessage(issues: { path: (string | number)[] }[]) {
+  const fields = [...new Set(issues.map(issue => issue.path.join('.')))];
+  const originHelp = fields.includes('CLIENT_ORIGIN')
+    ? ' Set CLIENT_ORIGIN in Render Environment to the exact public HTTPS Vercel frontend origin (for example https://your-project.vercel.app), without quotes, a path, query, fragment or credentials. An unset value defaults to localhost and is invalid in production.'
+    : '';
+  return `Invalid environment configuration: ${fields.join(', ')}${originHelp}`;
+}
+
 const parsed = envSchema.safeParse(process.env);
 if (!parsed.success) {
   // Report field names only: configuration values may contain credentials.
-  throw new Error(`Invalid environment configuration: ${parsed.error.issues.map(issue => issue.path.join('.')).join(', ')}`);
+  throw new Error(configurationErrorMessage(parsed.error.issues));
 }
 export const env = parsed.data;

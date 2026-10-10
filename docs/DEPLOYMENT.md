@@ -1,9 +1,8 @@
 # Production deployment preparation
 
 No deployment, commit, push or merge is performed by this preparation. The
-current implementation is on `work`; production services must use `main` only
-after a reviewed PR is merged explicitly. Do not deploy the older default branch
-and expect features from `work` to be present.
+production services must use `main`. Subsequent fixes are reviewed on `work` and
+must reach `main` through an explicitly approved merge before production rebuilds.
 
 ## Repository and build settings
 
@@ -212,3 +211,130 @@ Existing operator/seed tests now supply a valid production HTTPS origin so their
 original early-refusal assertions still execute under stricter validation. No
 package manifests, lockfiles, database connection implementation, execution or AI
 provider adapters, hidden-test architecture or SparkMeet class services changed.
+
+## Render startup troubleshooting and current production URLs
+
+The operator supplied these public URLs; this workspace has **not verified their
+live availability**:
+
+- Frontend login: `https://disha360-cypher.vercel.app/login`
+- Frontend origin: `https://disha360-cypher.vercel.app`
+- Backend origin: `https://disha360-api.onrender.com`
+
+`Invalid environment configuration: CLIENT_ORIGIN` occurs before MongoDB startup,
+authentication or OneCompiler initialization. Production validation requires an
+exact HTTPS frontend origin. The actual Render environment value is not readable
+here, so the error alone does not distinguish a missing value from a malformed
+value. Unset CLIENT_ORIGIN falls back to localhost, which production rejects.
+The supplied frontend **page** URL includes `/login`; that path must be omitted
+from CLIENT_ORIGIN. A trailing slash alone is accepted, but paths, query strings,
+fragments, embedded credentials, HTTP, surrounding quotes and comma-separated
+origins are rejected. Validation is retained; startup errors now include safe
+configuration instructions without echoing any submitted values.
+
+In Render, open **disha360-api → Environment**, edit/add the following non-secret
+settings, save, and restart/redeploy the service:
+
+```dotenv
+NODE_ENV=production
+NODE_VERSION=22.23.3
+CLIENT_ORIGIN=https://disha360-cypher.vercel.app
+COOKIE_SAME_SITE=none
+CODING_DEMO_MODE=false
+JUDGE0_SECURITY_CONFIRMED=false
+ONECOMPILER_ENABLED=true
+ONECOMPILER_MAX_EXECUTIONS_PER_DAY=100
+AI_PROVIDER=gemini
+GEMINI_KEY_SELECTION=primary
+```
+
+Enable OneCompiler only after verifying the account's free credits and billing
+behavior. Keep the existing ONECOMPILER_API_KEY and MONGODB_URI in Render's private
+settings; never paste them into Git, this guide, frontend settings or logs.
+GEMINI_API_KEY and the exact verified GEMINI_MODEL belong there too; the optional
+GEMINI_API_KEY_BACKUP remains manual-only. TRUST_PROXY=true is appropriate only
+after validating the single trusted ingress hop described above. Leave Render's
+PORT managed by the platform. The daily attempt cap is not a monetary guarantee.
+
+In Vercel, open **Project → Settings → Environment Variables**, set
+`VITE_API_BASE_URL=https://disha360-api.onrender.com` for **Production**, and rebuild
+the frontend. Do not append `/api` or a path. Keep Root Directory `client`, Vite,
+build `npm run build`, output `dist`, and install
+`cd .. && npm ci --include=dev`. Do not change production origin settings to a
+preview URL. Cross-site cookie limitations described above remain applicable.
+
+Render settings remain repository root, build
+`npm ci --include=dev && npm run build -w server`, start
+`npm run start -w server`, health `/api/v1/ready`. Verify startup logs report
+MongoDB connected and the API listener, then request readiness. From an operator
+machine with public access, these checks do not require API keys:
+
+```sh
+curl --fail --show-error https://disha360-api.onrender.com/api/v1/ready
+curl --fail --show-error https://disha360-api.onrender.com/api/v1/health
+curl --head https://disha360-cypher.vercel.app/login
+```
+
+The local read-only Atlas ping failed again. No URI/credentials were altered and
+no database records were written. Check Atlas access from Render, its outbound
+addresses, database-user permissions and DNS/TLS; a workspace connection failure
+does not establish Render connectivity. No Render/Vercel management tools are
+connected. Public probes to both supplied origins were denied by the workspace
+network proxy (HTTP CONNECT 403), not answered by the production applications.
+Live deployment success, database readiness and browser login remain unverified.
+
+### OneCompiler end-to-end acceptance
+
+The backend retains fixed `POST https://api.onecompiler.com/v1/run`, server-only
+`X-API-Key`, validated language/source/stdin, timeouts, quota stops and no retries.
+Use a real Student account through the frontend, and inspect the authenticated
+`GET /api/v1/student/coding/config`: it must show configured=true,
+provider=OneCompiler and demoMode=false. Backend credentials never appear there.
+
+Run uses `POST /api/v1/student/coding/run`; Submit uses
+`POST /api/v1/student/coding/problems/:id/submissions`. Both require the session
+cookie, exact frontend Origin and `X-Disha360-Request: 1` on mutations. Do not
+attempt anonymous execution or disable the CSRF checks to test the provider.
+Check credentialed CORS preflight and browser cookie acceptance first.
+
+For each of Python, Java, C++ and JavaScript, use a small stdin/stdout program
+(for example adding two numbers with stdin `2 3`, expected run stdout `5`), check
+actual stdout/diagnostics, then submit a published compatible problem using its
+documented input/output format. Verify history, genuine aggregate grading and
+analytics; wrong answers and provider failures must not count as solved. Java
+public class filenames are inferred conventionally. Hidden inputs and expected
+answers must never appear in browser responses or mentor prompts. Confirm mentor
+advice remains labeled unexecuted and SparkMeet attendance remains manual.
+
+Automated authenticated Run and batch Submit coverage now includes all four
+languages with mocked provider transports, including hidden-test/history/analytics
+assertions. These mocks verify the application contract, not provider compilation
+or live execution. No real OneCompiler/Gemini requests or production submissions
+were made here. Live execution needs an operator-authenticated browser, available
+provider credits, and accessible production services; it remains unverified.
+
+### Dependency audit and follow-up fix validation
+
+The initial audit reported 2 critical, 6 high and 4 moderate package entries.
+Both workspaces now use Vitest 4.1.11, removing its vulnerable mocker/tinypool
+chain, and the backend uses csv-parse 7.0.2 to address its runtime prototype
+replacement advisory. The shared lockfile was updated through targeted installs;
+no `npm audit fix --force` or unrelated frontend migration was used.
+
+After updates: **0 critical, 6 high, 2 moderate** full-tree entries;
+`npm audit --omit=dev` reports **zero vulnerabilities**. Remaining high entries
+are braces, chokidar, fast-glob, micromatch, nodemon and tailwindcss; the two
+moderate entries are postcss-nested/postcss-selector-parser. These are development/
+build-tool chains, not runtime application dependencies. The current registry
+lists braces 3.0.3 as latest with no patched same-series release; audit suggests a
+Tailwind 4 migration or Nodemon downgrade, which are not safe automatic fixes for
+this deployment patch. Track upstream fixes or plan a separately tested toolchain
+migration. Never expose development/watch/test servers on production; retain
+trusted build inputs. This report does not claim the full dependency tree is clean.
+
+The follow-up full test suite passed **368 tests (331 backend, 37 frontend)** on
+Node 22.23.3 with zero failures. Type-check and production build passed; the existing
+Monaco size advisory remains. The database check and live probes are distinct
+failures/blocks, not included as passing application tests. Private server/.env
+remains untouched. Changes are intended for origin/work and a reviewed PR to main;
+no automatic merge or deployment is authorized by this patch.
