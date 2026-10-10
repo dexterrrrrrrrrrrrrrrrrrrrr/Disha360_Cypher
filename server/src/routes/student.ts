@@ -124,6 +124,7 @@ export function studentRoutes(
   const mentorLimit = rateLimit({ windowMs: 60000, limit: 5, keyGenerator: req => req.user!.id as string,
     message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many mentor requests. Please wait a minute.' } } });
   router.get('/coding/mentor/config', mentor.config);
+  router.post('/coding/mentor/stream', aiLimit, mentorLimit, mentor.stream);
   router.post('/coding/mentor', aiLimit, mentorLimit, mentor.generate);
   router.get("/interviews/config", interviews.config);
   router.get("/interviews", interviews.list);

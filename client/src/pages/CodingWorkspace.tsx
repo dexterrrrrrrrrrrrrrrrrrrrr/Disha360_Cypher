@@ -301,7 +301,7 @@ export function Workspace({
       )}
       {demoMode && !problemId && <p className="text-sm text-slate-600">Open a published challenge to demonstrate Demo Submit.</p>}
       <div className="grid gap-5 lg:grid-cols-2">
-        <label className="card">
+        <label className="card rounded-2xl">
           <span className="field-label">Custom standard input</span>
           <textarea
               aria-label="Custom standard input"
@@ -315,13 +315,13 @@ export function Workspace({
             }}
           />
         </label>
-        <section className="card min-w-0">
+        <section className="card min-w-0 rounded-2xl border-violet-200">
           <h2 className="font-semibold">{demoMode ? "Illustrative output" : "Execution output"}</h2>
           {demoMode ? (
             <>
               <p role="status" className="mt-3 text-sm font-semibold text-amber-900">Demo Mode: Code was not executed. This is an illustrative output only.</p>
               <p className="mt-2 text-sm text-slate-600">Code and custom input are not processed. This fixed example is unrelated to your solution.</p>
-              {demoRun ? <pre className="mt-3 overflow-auto whitespace-pre-wrap break-words rounded bg-slate-50 p-3 text-xs">{demoRun.illustrativeOutput}</pre> : <p className="mt-3 text-sm text-slate-600">Choose Demo Run to show a fixed illustrative example.</p>}
+              {demoRun ? <pre className="mt-3 overflow-auto whitespace-pre-wrap break-words rounded-lg border border-slate-700 bg-slate-950 p-4 font-mono text-xs leading-6 text-slate-100">{demoRun.illustrativeOutput}</pre> : <p className="mt-3 text-sm text-slate-600">Choose Demo Run to show a fixed illustrative example.</p>}
             </>
           ) : execution ? (
             <>
@@ -345,7 +345,7 @@ export function Workspace({
               ].map(([label, text]) => (
                 <div className="mt-4" key={label}>
                   <h3 className="text-xs font-semibold">{label}</h3>
-                  <pre className="mt-2 max-h-52 overflow-auto whitespace-pre-wrap break-words rounded bg-slate-50 p-3 text-xs">
+                  <pre className="mt-2 max-h-52 overflow-auto whitespace-pre-wrap break-words rounded-lg border border-slate-700 bg-slate-950 p-4 font-mono text-xs leading-6 text-slate-100">
                     {text || "(empty)"}
                   </pre>
                 </div>

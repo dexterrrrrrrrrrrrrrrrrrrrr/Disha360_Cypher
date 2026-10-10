@@ -25,7 +25,7 @@ export function codingControllers(provider?: ExecutionProvider, demoMode = false
           ? "Coding Demo Mode: No code execution or grading. Code and custom input are not processed. Demo actions do not affect scores, points, badges or analytics."
           : provider
           ? `Code runs on ${provider.name}. Run output is not a judged solution. Code and input are shared with the execution provider.`
-          : setupMessage || "Execution setup required. Configure OneCompiler or a trusted hardened Judge0 provider on the backend. Draft editing and saving remain available.",
+          : setupMessage || "Execution setup required. Local execution is disabled because a hardened sandbox has not been verified. See docs/LOCAL_DEVELOPMENT.md for isolation requirements, or configure OneCompiler / a trusted hardened Judge0 provider. Draft editing and saving remain available.",
       },
     });
   const draft: RequestHandler = async (req, res) => {

@@ -1018,3 +1018,33 @@ without overflow; there were no page errors or external browser requests. These
 checks do not verify live credentials, credits, external worker security or actual
 SparkMeet video rooms. No production records, private .env files, credentials,
 commits or pushes were changed/created by this implementation.
+
+## Ollama and the learning studio
+
+`OllamaAIService` implements the existing `InterviewProvider` interface, shared by
+interviews, follow-ups, feedback, consent-based resume suggestions and coding
+mentoring. It uses the official `/api/chat` JSON-schema contract with Zod output
+validation, bounded bodies, abort deadlines, one concurrent inference and request
+limits. `/api/tags` checks the exact configured installed model. No automatic
+pulls, provider/model fallbacks, cloud keys or fake AI responses are used.
+
+`POST /api/v1/student/coding/mentor/stream` streams Ollama NDJSON through existing
+student authentication, origin/CSRF protection and shared mentor rate limits.
+Disconnects abort upstream inference; backpressure is respected. A completion
+record is required, and failures mark partial guidance as incomplete. Existing
+`POST /coding/mentor` keeps validated JSON for non-streaming providers. Prompt and
+bounded conversation context are untrusted data, with explicit full-solution
+opt-in and public-field-only problem projection. OpenAI mentoring uses the
+existing official SDK/client only with its explicit backend credential.
+
+Relevant UI includes a branded mentor chat, safe Markdown rendering without raw
+HTML/images/active links, copyable highlighted code, provider privacy/status
+panel, interview session metrics/progress and refreshed editor/output cards.
+Existing private transcripts, evidence validation, scoring semantics, deterministic
+ATS, execution grading and coding analytics remain intact.
+
+`LOCAL_CODE_EXECUTION_ENABLED=false` is fail-closed: true is rejected. The inspected
+Docker runtime did not provide a verified untrusted-code isolation boundary; no
+unsafe local runner is enabled or claimed. OneCompiler and gated Judge0 remain
+unchanged. Setup, model/hardware estimates, test distinctions and requirements for
+a separate hardened runner are in [LOCAL_DEVELOPMENT.md](LOCAL_DEVELOPMENT.md).

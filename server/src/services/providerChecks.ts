@@ -1,3 +1,4 @@
+import { OllamaAIService } from './ollamaAI.js';
 import { GoogleGenAI } from '@google/genai';
 import type { AISettings } from './aiProvider.js';
 import type { ExecutionSettings } from './executionProvider.js';
@@ -13,7 +14,11 @@ export async function checkProviders(settings: Settings, lookup: ModelReader = r
   const checks: { feature: string; status: 'blocked' | 'verified' | 'configured'; message: string }[] = [];
   const keyName = settings.GEMINI_KEY_SELECTION === 'backup' ? 'GEMINI_API_KEY_BACKUP' : 'GEMINI_API_KEY';
   const key = settings.GEMINI_KEY_SELECTION === 'backup' ? settings.GEMINI_API_KEY_BACKUP : settings.GEMINI_API_KEY;
-  if (settings.AI_PROVIDER !== 'gemini') checks.push({ feature: 'Gemini interviews and coding mentor', status: 'blocked', message: 'Select AI_PROVIDER=gemini to use these Gemini workflows.' });
+  if (settings.AI_PROVIDER === 'ollama') {
+    try { const status = await new OllamaAIService(settings.OLLAMA_BASE_URL ?? 'http://127.0.0.1:11434', settings.OLLAMA_MODEL ?? '').availability(); checks.push({ feature: 'Ollama interviews and coding mentor', status: status.available ? 'verified' : 'blocked', message: status.message }); }
+    catch { checks.push({ feature: 'Ollama interviews and coding mentor', status: 'blocked', message: 'Start Ollama and configure OLLAMA_MODEL to the exact name from ollama list. No cloud credential is required.' }); }
+  }
+  else if (settings.AI_PROVIDER === 'openai') checks.push({ feature: 'OpenAI interviews and coding mentor', status: settings.OPENAI_API_KEY?.trim() ? 'configured' : 'blocked', message: settings.OPENAI_API_KEY?.trim() ? 'An explicitly configured OpenAI credential is present. Model access and generation availability are unverified; no paid request was made.' : 'The selected optional OpenAI provider has no explicitly configured backend key. Select Ollama for local AI without cloud credits.' });
   else if (!key?.trim()) checks.push({ feature: 'Gemini interviews and coding mentor', status: 'blocked', message: `Missing ${keyName}. Configure it in secure backend environment settings; no key is requested in chat.` });
   else if (!/^gemini-[a-zA-Z0-9.-]+$/.test(settings.GEMINI_MODEL)) checks.push({ feature: 'Gemini model', status: 'blocked', message: 'Set GEMINI_MODEL to an exact currently supported Free Tier identifier. No model is guessed.' });
   else {

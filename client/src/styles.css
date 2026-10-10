@@ -43,3 +43,16 @@
 @media (max-width: 639px) {
   input.input, select.input, textarea.input { font-size: 1rem; }
 }
+
+@layer components {
+  .mentor-markdown p { @apply mb-3 last:mb-0; }
+  .mentor-markdown h1, .mentor-markdown h2, .mentor-markdown h3 { @apply mb-3 mt-5 font-semibold text-slate-900; }
+  .mentor-markdown ul { @apply mb-3 list-disc space-y-1 pl-5; }
+  .mentor-markdown ol { @apply mb-3 list-decimal space-y-1 pl-5; }
+  .mentor-markdown blockquote { @apply my-3 border-l-2 border-violet-300 pl-3 text-slate-600; }
+}
+
+.interview-progress { appearance: none; border: 0; border-radius: 999px; overflow: hidden; }
+.interview-progress::-webkit-progress-bar { background: #ede9fe; border-radius: 999px; }
+.interview-progress::-webkit-progress-value { background: #7c3aed; border-radius: 999px; }
+.interview-progress::-moz-progress-bar { background: #7c3aed; border-radius: 999px; }

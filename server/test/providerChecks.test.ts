@@ -30,3 +30,17 @@ it('keeps opt-in execution and demo settings explicit', async () => {
   expect((await checkProviders({ ...settings(), ONECOMPILER_ENABLED: false }, lookup)).configurationReady).toBe(false);
   expect((await checkProviders({ ...settings(), CODING_DEMO_MODE: true }, lookup)).configurationReady).toBe(false);
 });
+it('checks local Ollama availability without touching Gemini keys or cloud generation', async () => {
+  const transport = vi.spyOn(globalThis, 'fetch').mockResolvedValue(Response.json({ models: [{ name: 'fixture:local' }] }));
+  try {
+    const lookup = vi.fn(); const result = await checkProviders({ ...settings(), AI_PROVIDER: 'ollama', OLLAMA_MODEL: 'fixture:local' }, lookup);
+    expect(result.checks[0]).toMatchObject({ feature: 'Ollama interviews and coding mentor', status: 'verified' }); expect(lookup).not.toHaveBeenCalled(); expect(transport.mock.calls[0][0]).toContain('/api/tags');
+  } finally { transport.mockRestore(); }
+});
+it('reports optional OpenAI configuration without making paid calls or using fallback providers', async () => {
+  const lookup = vi.fn();
+  const configured = await checkProviders({ ...settings(), AI_PROVIDER: 'openai', OPENAI_API_KEY: 'fixture-explicit-openai' }, lookup);
+  expect(configured.checks[0].status).toBe('configured'); expect(JSON.stringify(configured)).not.toContain('fixture-explicit-openai');
+  const missing = await checkProviders({ ...settings(), AI_PROVIDER: 'openai', OPENAI_API_KEY: undefined }, lookup);
+  expect(missing.checks[0].status).toBe('blocked'); expect(missing.checks[0].message).toContain('Select Ollama'); expect(lookup).not.toHaveBeenCalled();
+});
