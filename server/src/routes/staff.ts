@@ -26,6 +26,8 @@ import {
   people,
 } from "../controllers/staffBatches.js";
 import { listStudents, studentDetails } from "../controllers/staffStudents.js";
+import { listLiveClasses, getLiveClass, createLiveClass, updateLiveClass, cancelLiveClass, recordClassAttendance } from '../controllers/liveClasses.js';
+import { rateLimit } from 'express-rate-limit';
 export function staffRoutes(origin: string, status = databaseStatus) {
   const r = Router();
   r.use((_req, res, next) => {
@@ -43,6 +45,14 @@ export function staffRoutes(origin: string, status = databaseStatus) {
     next();
   });
   r.use(requireAuth, requireRole("trainer", "admin"));
+  const classLimit = rateLimit({ windowMs: 60000, limit: 20, keyGenerator: req => req.user!.id as string,
+    message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many class updates. Please wait a minute.' } } });
+  r.get('/live-classes', listLiveClasses);
+  r.get('/live-classes/:id', getLiveClass);
+  r.post('/live-classes', classLimit, createLiveClass);
+  r.put('/live-classes/:id', classLimit, updateLiveClass);
+  r.post('/live-classes/:id/cancel', classLimit, cancelLiveClass);
+  r.put('/live-classes/:id/attendance', classLimit, recordClassAttendance);
   r.get("/dashboard", staffDashboard);
   r.get("/leaderboard", leaderboard);
   r.get("/leaderboard/options", leaderboardOptions);

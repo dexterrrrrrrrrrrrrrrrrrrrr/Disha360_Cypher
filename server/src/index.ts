@@ -4,7 +4,7 @@ import { Company, CompanyProgress } from "./models/Company.js";
 import { LearningModule } from "./models/LearningModule.js";
 import { CodingProblem } from "./models/CodingProblem.js";
 import { CodingSubmission } from "./models/CodingSubmission.js";
-import { Judge0Provider } from "./services/codeExecution.js";
+import { configureExecution } from './services/executionProvider.js';
 import { CodeDraft } from "./models/CodeDraft.js";
 import { env } from "./config/env.js";
 import { connectDatabase, disconnectDatabase } from "./config/database.js";
@@ -19,12 +19,13 @@ import {
 import { Resume } from "./models/Resume.js";
 import { ResumeAnalysis } from "./models/ResumeAnalysis.js";
 import { InterviewSession } from "./models/InterviewSession.js";
-import { OpenAIInterviewProvider } from "./services/interviewProvider.js";
+import { configureAI } from "./services/aiProvider.js";
 import { InterviewFeedback } from "./models/InterviewFeedback.js";
 import { Question, Assessment, TestAttempt } from "./models/Assessment.js";
 import { sweepExpiredAttempts } from "./services/assessments.js";
 import { databaseStatus } from "./config/database.js";
 import { Batch, Enrollment } from "./models/Batch.js";
+import { LiveClass } from './models/LiveClass.js';
 
 if (env.MONGODB_URI) {
   try {
@@ -59,6 +60,7 @@ if (env.MONGODB_URI) {
       TestAttempt.createIndexes(),
     ]);
     await Promise.all([Batch.createIndexes(), Enrollment.createIndexes()]);
+    await LiveClass.createIndexes();
     console.log("MongoDB connected.");
   } catch {
     await disconnectDatabase();
@@ -72,20 +74,19 @@ if (env.MONGODB_URI) {
     "MONGODB_URI is not configured. Authentication and persistence are unavailable; health endpoints remain available.",
   );
 
+const ai = configureAI(env);
+const execution = configureExecution(env);
 const app = createApp({
   codingDemoMode: env.CODING_DEMO_MODE,
-  executionProvider:
-    env.JUDGE0_URL && env.JUDGE0_SECURITY_CONFIRMED
-      ? new Judge0Provider(env.JUDGE0_URL, env.JUDGE0_API_KEY)
-      : undefined,
+  executionProvider: execution.provider,
+  executionSetupMessage: execution.message,
   clientOrigin: env.CLIENT_ORIGIN,
   databaseConfigured: Boolean(env.MONGODB_URI),
   secureCookies: env.NODE_ENV === "production",
   trustProxy: env.TRUST_PROXY,
   allowDemoAccounts: env.NODE_ENV === "development",
-  interviewProvider: env.OPENAI_API_KEY
-    ? new OpenAIInterviewProvider(env.OPENAI_API_KEY, env.OPENAI_MODEL)
-    : undefined,
+  interviewProvider: ai.provider,
+  aiSetupMessage: ai.setupMessage,
 });
 const server = app.listen(env.PORT, "0.0.0.0", () =>
   console.log(`Disha360 API listening on port ${env.PORT}`),

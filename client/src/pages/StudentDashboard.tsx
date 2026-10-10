@@ -1,4 +1,5 @@
 import { DashboardEngagement } from "../components/EngagementSummary";
+import { UpcomingLiveClasses } from './LiveClasses';
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { BookOpen, Flame, Target, ClipboardCheck } from "lucide-react";
@@ -127,6 +128,7 @@ export function StudentDashboard() {
               ))}
             </div>
             <DashboardEngagement />
+            <UpcomingLiveClasses role="student"/>
             {data.coding && (
               <section className="card mt-5">
                 <h2 className="font-semibold">Coding preparation</h2>

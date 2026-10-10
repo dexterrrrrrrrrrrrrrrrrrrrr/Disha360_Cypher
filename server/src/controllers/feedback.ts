@@ -22,7 +22,7 @@ export function feedbackControllers(provider?: InterviewProvider) {
     const saved = await InterviewFeedback.findOne({ sessionId: s._id, studentId: req.user!._id });
     if (saved) { res.json({ success: true, data: { report: { id: saved.id, ...saved.report, createdAt: saved.createdAt, provider: saved.provider } } }); return; }
     if (!answeredQuestions(s.messages as Parameters<typeof answeredQuestions>[0]).length) throw new AppError(422, 'NO_ANSWERS', 'No saved answers are available to evaluate. Start another interview and answer at least one question.');
-    if (!provider?.feedback) throw new AppError(503, 'AI_SETUP_REQUIRED', 'Interview feedback is unavailable. Configure the backend OpenAI provider to generate a report.');
+    if (!provider?.feedback) throw new AppError(503, 'AI_SETUP_REQUIRED', 'Interview feedback is unavailable. Configure the selected backend AI provider to generate a report.');
     const token = randomBytes(16).toString('hex');
     const lock = await InterviewSession.findOneAndUpdate({ _id: s._id, studentId: req.user!._id, status: 'completed', $or: [{ feedbackUntil: null }, { feedbackUntil: { $lt: new Date() } }] }, { $set: { feedbackToken: token, feedbackUntil: new Date(Date.now() + 90000) } }, { new: true });
     if (!lock) throw new AppError(409, 'FEEDBACK_BUSY', 'A report is already being generated. Wait and reload the report.');

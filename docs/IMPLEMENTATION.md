@@ -748,3 +748,273 @@ submission history, rate-limit error feedback, and no document
 overflow at 320/375/768/1024/1440px. No page errors or external browser requests
 were observed. No production database, live execution provider or paid service
 was used. Live Judge0 execution remains unverified and unchanged.
+
+
+## Centralized Google Gemini integration
+
+The current AI setup section in README.md supersedes earlier OpenAI-only setup
+instructions. Existing OpenAI behavior remains available only with explicit
+`AI_PROVIDER=openai`. Default `AI_PROVIDER=gemini`, key selection `primary`, and
+blank `GEMINI_MODEL` are intentional: no potentially paid or obsolete model is
+silently selected. Official pricing/rate-limit pages were blocked by this
+workspace's outbound policy on 10 October 2026. Model Free Tier eligibility,
+project billing status, retention terms and live Google availability remain
+manual checks. The maintained SDK source was accessible; `@google/genai` 2.28.0
+was verified via npm metadata and installed with the lockfile. Existing locked
+package versions were preserved.
+
+### AI feature audit
+
+| Feature | Before integration | Result |
+| --- | --- | --- |
+| Mock interviews | A: OpenAI conversation | Gemini or explicit OpenAI; existing types/setup/history |
+| Initial question generation | A: provider-generated | Gemini structured question with validated setup |
+| Follow-up questions | A: answer-adaptive provider calls | Actual previous questions/answers sent to Gemini |
+| Answer evaluation | A: completed-interview feedback | Existing evidence-linked rubric preserved |
+| Interview feedback/preparation advice | A: provider report/nextSteps | Gemini report, same evidence/score validator |
+| Resume builder/PDF | B: structured editing and deterministic export | Preserved; no automatic AI editing |
+| Resume/ATS analysis | B: deterministic ATS-style rubric | Unchanged score algorithm and saved snapshots |
+| Resume improvement suggestions | B: heuristic suggestions | Heuristics preserved; optional consent-based Gemini qualitative suggestions added |
+| Learning recommendations | B: dashboard actions/curated content | Kept rule-based; no new AI recommender |
+| Coding explanations | C: no existing AI explanation workflow | Not invented; Monaco, Demo Mode and Judge0 preserved |
+| Company preparation | B: curated profiles/checklists and assessment matching | Kept rule-based; provider-neutral existing interview guidance |
+
+### Architecture and safeguards
+
+`configureAI` selects one provider at startup. `GeminiAIService` owns one SDK
+client, shared rate/concurrency state, the selected immutable model and the
+request/response boundary for every Gemini feature. `GEMINI_KEY_SELECTION` chooses
+exactly one of `GEMINI_API_KEY`/`GEMINI_API_KEY_BACKUP`; the unselected key is not
+sent to the SDK. Selection changes require operator configuration and restart.
+A missing selected key does not fall back. Invalid/revoked credentials, quota
+exhaustion, timeouts or unavailable models do not rotate keys/providers/models.
+The SDK is explicitly set to the Gemini Developer API rather than Vertex AI or
+Enterprise, and `retryOptions.attempts=1` prevents automatic retries.
+
+Questions/feedback share the same prompts with the preserved OpenAI adapter.
+Setup and transcript are treated as untrusted data. The service uses JSON MIME
+and JSON schemas, requires a completed STOP response, and validates with Zod.
+Feedback additionally uses the existing saved-answer quote and question-coverage
+checks before persistence. No raw SDK errors, keys or student content are logged
+or sent in error responses. No tools/code execution, grounding, caches, billing
+activation or cloud-resource creation are used. Configuration status reports
+presence only, without a quota-consuming probe or claim of live readiness.
+
+Limits are documented in README.md: 45 seconds, bounded input/output bytes and
+output tokens, ten calls/minute and two concurrent calls per backend instance,
+plus preserved HTTP AI limits and bounded MongoDB leases/version checks. The
+per-instance limiter is not a distributed project-wide quota or rupee cap. A
+client timeout cannot guarantee cancellation of work already received by Google.
+A strict ₹0 setup requires verified Free Tier eligibility and disabled project
+billing; the code cannot infer billing state from a key.
+
+### Resume privacy and UI
+
+`POST /api/v1/student/resumes/:id/ai-suggestions` requires authenticated Student
+ownership, existing origin/CSRF protection, the AI limiter, strict input validation
+and `consent:true` on each request. It reads the owned saved resume, prepares a
+minimized/redacted payload and calls the shared Gemini service. It returns only
+validated qualitative suggestions, provider label, saved version and disclaimer.
+It does not update resume content/version, ATS analyses, scores or other models.
+No keys or key-selection settings are returned. Hidden coding tests are unrelated
+and untouched. The request cannot supply another owner, keys, provider or model.
+
+The ATS page explains that its scores remain deterministic. The separate panel
+shows provider disclosure, unchecked consent, disabled duplicate actions, loading,
+errors and AI-generated labels. Consent/results reset when resume or description
+changes; stale asynchronous responses are discarded. Results are temporary and
+are not applied automatically. Contact-field omission and best-effort text
+redaction do not guarantee anonymity; the user must review content and Google's
+current Free Tier retention/data-use terms. Existing interview privacy text now
+explains provider sharing rather than implying content never leaves the app.
+
+No private .env files, production data, Coding Demo Mode or Judge0 execution
+implementation were modified. `JUDGE0_SECURITY_CONFIRMED` still defaults to false.
+
+### Verification and changed-file inventory
+
+Validation on 10 October 2026: `npm test` passed all 288 tests (257 server,
+31 client), including 34 new mocked Gemini/privacy tests. `npm run typecheck`
+and `npm run build` passed. The existing large Monaco bundle warning remains.
+Chromium verified authenticated Technical/HR questions, actual-answer follow-ups,
+feedback/history, resume consent, unchanged ATS scores and saved resume content,
+friendly quota errors without fabricated results, Coding Demo Mode, and responsive
+layouts at 320/375/768/1024/1440 pixels. Browser checks used the real Google SDK
+against a local mock and a disposable test database, not a live Gemini key;
+there were no page errors or external browser requests.
+
+Current Google Free Tier model eligibility could not be independently verified:
+official pricing/rate-limit pages returned HTTP 403 in this environment.
+`GEMINI_MODEL` remains blank intentionally. Live provider operation and ₹0 billing
+eligibility require the operator checks documented in README.md before enabling AI.
+
+Modified files:
+
+- `README.md`, `docs/IMPLEMENTATION.md`, `package-lock.json`
+- `server/.env.example`, `server/package.json`
+- `server/src/app.ts`, `server/src/index.ts`, `server/src/config/env.ts`
+- `server/src/routes/student.ts`
+- `server/src/controllers/interviews.ts`, `server/src/controllers/feedback.ts`
+- `server/src/services/interviewProvider.ts`, `server/src/services/companyPreparation.ts`
+- `server/test/interviews.test.ts`
+- `client/src/pages/Interviews.tsx`, `client/src/pages/ResumeAnalyzer.tsx`
+
+Created files:
+
+- `server/src/services/aiPrompts.ts`, `server/src/services/aiProvider.ts`, `server/src/services/geminiAI.ts`
+- `server/src/controllers/resumeSuggestions.ts`, `server/src/validators/resumeSuggestions.ts`
+- `server/test/geminiAI.test.ts`, `server/test/geminiWorkflows.test.ts`, `server/test/helpers/gemini.ts`
+- `client/src/features/resume/ResumeAISuggestions.tsx`, `client/test/resumeAIUI.test.tsx`
+
+## OneCompiler execution, Gemini Coding Mentor and SparkMeet classes
+
+This extension keeps the existing provider abstraction, coding drafts/problems/
+submissions, deterministic grading and reward consumers. `configureExecution`
+selects OneCompiler only with explicit enablement and a backend key; otherwise
+the original Judge0 gate remains. Missing selected configuration has no fallback.
+The OneCompiler direct contract was supplied by the user from official docs after
+network access failed (HTTP 403); no private keys or live paid calls were used.
+
+`OneCompilerProvider` sends the supplied fixed HTTPS endpoint/header and schema,
+never a caller-controlled URL. Central language/filename mapping, strict input
+limits, bounded streamed responses, abort/deadline, rate/concurrency/day caps and
+safe E001–E006/HTTP handling precede normalization. It recognizes either quota
+remaining field and stops future calls at zero. Batch responses require exact
+length and ordered echoed stdin; no missing or reordered result is invented.
+Oversized combined stdin is split into bounded batches with an overall submission
+deadline. `judgeSubmission` accepts optional provider batching, then applies the
+unchanged whitespace policy. It keeps deterministic aggregate results, saved
+request IDs, Student ownership, null scores for provider/system failures, and
+hidden-diagnostic suppression. Existing solved/progress/leaderboard/badge logic
+consumes genuine completed records without any AI grading changes.
+
+OneCompiler does not expose a portable exit/compilation status in the supplied
+contract. Nonempty diagnostics fail conservatively and their classification is
+heuristic; stderr-writing successful programs may be rejected. No worker CPU,
+memory or egress guarantees were independently verified. Request timeouts bound
+the LMS wait, not remote work. Caps are per-process attempt limits, not durable
+Google/OneCompiler quotas or rupee caps. Check account credits/billing externally.
+The current problem model is stdin/stdout-only; no function-test harness is invented.
+
+`GeminiAIService.codingMentor` uses the same immutable SDK client, model/key
+selection and shared limits as interviews/resume suggestions. Its strict context
+contains code/language/action, progressive hint level, explicit full-solution
+opt-in, public problem fields and displayed Run diagnostics only. Hidden tests,
+test results and source from other Student records are not read. Output schema
+contains explanation/nextSteps, no grading fields. The panel requires data-sharing
+consent, discards stale responses on source/context changes and never saves code
+edits, awards or submissions. Model identifiers (including a proposed Gemini 3.8
+Flash) are not guessed; private configuration was untouched.
+
+### API additions and existing endpoints extended
+
+All routes use existing authentication/roles, origin/CSRF and private no-store
+responses. Prefixes below are `/api/v1/student` and `/api/v1/staff` respectively.
+
+| Scope | Method/path | Behavior |
+| --- | --- | --- |
+| Student | GET `/coding/config` | Selected executor/configuration; truthful provider-managed limits |
+| Student | POST `/coding/run` | Real OneCompiler run through existing execution interface |
+| Student | POST `/coding/problems/:id/submissions` | Authoritative backend batch grading/persistence |
+| Student | GET `/coding/submissions`, GET `/coding/submissions/:id` | Existing private aggregate history |
+| Student | GET `/coding/mentor/config` | Mentor capability, without credentials |
+| Student | POST `/coding/mentor` | Validated public context and shared Gemini advice |
+| Student | GET `/live-classes` | Classes and own attendance in active enrolled batches |
+| Student | GET `/live-classes/:id` | Authorized meeting, notes/resources and own attendance |
+| Staff | GET `/live-classes` | Owned/assigned trainer scope or all Admin classes, real analytics |
+| Staff | GET `/live-classes/:id` | Scoped meeting details, enrollment roster and attendance |
+| Staff | POST `/live-classes` | Versioned scheduling with creator-scoped idempotency UUID |
+| Staff | PUT `/live-classes/:id` | Scoped editing/assignment with optimistic version checks |
+| Staff | POST `/live-classes/:id/cancel` | Cancellation/version guard; links withheld afterward |
+| Staff | PUT `/live-classes/:id/attendance` | Enrollment-validated manual observations after start |
+
+Class list query supports `view=all|upcoming` (strictly validated). Lists are bounded
+at 100 entries with truncation indication; dashboards request nearest upcoming/
+currently scheduled-live classes. Analytics count the complete authorized scope,
+not just the displayed page. Status uses start + duration, never video telemetry.
+
+### Live-class model and authorization
+
+New `LiveClass` stores title, description, batchId, trainerId, createdBy, requestId,
+private requestFingerprint/meetingUrl, startsAt, durationMinutes, cancelled,
+optimistic version, notes, resource links and embedded manual attendance entries
+(studentId/status/note/recordedBy/recordedAt). Indexes are unique creator/requestId,
+batch/start and trainer/start; normal startup ensures them alongside existing
+indexes. Existing Batch/Enrollment/User schemas and connection remain unchanged.
+
+Trainers can operate only their own classes in actively assigned batches; Admins
+may assign only real Trainers in the chosen batch. Students need current active
+enrollment and an active batch for both list/detail access; revocation removes LMS
+access, including previous class details. They receive only their attendance,
+never other students' roster/records. Attendance edits merge observations by
+student with version checks; duplicate/unrelated attendees, future or cancelled
+class updates are rejected. Opening a link does not create any attendance record.
+After start, schedule/batch/trainer changes are rejected; notes/resources remain
+editable. Completed classes cannot be cancelled; cancelled classes cannot be edited.
+Creation retries have identical fingerprints or return conflict, not duplicate rows.
+
+SparkMeet integration stores actual operator-supplied links on the fixed origin and
+opens a separate tab. No verified API/embed/token/SSO documentation was available;
+no such capability or automatic room creation/attendance is claimed. Additional
+mentorship is intentionally outside this core implementation. Resource links use
+HTTPS; external sites have their own privacy/security policies. Detailed setup,
+limits, costs and provider caveats are documented in README.md.
+
+### Changed-file inventory
+
+- `README.md`
+- `client/src/features/coding/CodingMentor.tsx`
+- `client/src/hooks/useStaffData.ts`
+- `client/src/layouts/AppLayout.tsx`
+- `client/src/main.tsx`
+- `client/src/pages/CodingWorkspace.tsx`
+- `client/src/pages/LiveClasses.tsx`
+- `client/src/pages/StaffDashboard.tsx`
+- `client/src/pages/StudentDashboard.tsx`
+- `client/test/liveCodingUI.test.tsx`
+- `docs/IMPLEMENTATION.md`
+- `server/.env.example`
+- `server/src/app.ts`
+- `server/src/config/env.ts`
+- `server/src/controllers/coding.ts`
+- `server/src/controllers/codingMentor.ts`
+- `server/src/controllers/codingProblems.ts`
+- `server/src/controllers/liveClasses.ts`
+- `server/src/index.ts`
+- `server/src/models/LiveClass.ts`
+- `server/src/routes/staff.ts`
+- `server/src/routes/student.ts`
+- `server/src/services/codeExecution.ts`
+- `server/src/services/codingJudge.ts`
+- `server/src/services/executionProvider.ts`
+- `server/src/services/geminiAI.ts`
+- `server/src/services/interviewProvider.ts`
+- `server/src/services/oneCompiler.ts`
+- `server/src/validators/codingMentor.ts`
+- `server/src/validators/liveClass.ts`
+- `server/test/codingMentor.test.ts`
+- `server/test/liveClasses.test.ts`
+- `server/test/oneCompiler.test.ts`
+- `server/test/oneCompilerWorkflows.test.ts`
+
+### Verification
+
+The final implementation adds 64 focused tests to the existing 288-test suite.
+The full suite passed 352 tests (317 server, 35 client), with no failures.
+`npm run typecheck` and `npm run build` passed; the existing lazy Monaco
+bundle-size advisory remains. Tests cover direct-API language mapping, batch
+ordering/chunking, output/UTF-8 limits, E001–E006, HTTP/network/timeout/quota
+errors, no retries/fallbacks, hidden grading/history, demo and Judge0 gates,
+mentor hints/context/limits/errors/no grading, and class ownership/enrollment,
+admin assignments, URL/date/version/idempotency/attendance protections.
+
+Chromium exercised real authenticated React/Express workflows against a disposable
+MongoDB database and mocked OneCompiler/Gemini transports (the real shared Google
+SDK was used). Scheduling, editing/notes/resources, cancellation, Student batch
+isolation, manual attendance, Admin totals, Run output/runtime errors, progressive
+hints and quota messages, deterministic hidden batch grading and submission
+history passed. Representative layouts passed at 320, 375, 768 and 1440 pixels
+without overflow; there were no page errors or external browser requests. These
+checks do not verify live credentials, credits, external worker security or actual
+SparkMeet video rooms. No production records, private .env files, credentials,
+commits or pushes were changed/created by this implementation.

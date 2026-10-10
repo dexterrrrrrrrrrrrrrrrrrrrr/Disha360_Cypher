@@ -131,6 +131,7 @@ export function problemControllers(provider?: ExecutionProvider) {
     }).select("+hiddenTests");
     if (!p) throw new AppError(404, "NOT_FOUND", "Coding problem not found.");
     let s;
+    if (!p.supportedLanguages.includes(input.language)) throw new AppError(400, 'UNSUPPORTED_LANGUAGE', 'This problem does not support the selected language.');
     try {
       s = await CodingSubmission.create({
         studentId: req.user!._id,

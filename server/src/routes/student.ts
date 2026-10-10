@@ -35,6 +35,9 @@ import {
   listAnalyses,
   getAnalysis,
 } from "../controllers/analyses.js";
+import { resumeSuggestionController } from "../controllers/resumeSuggestions.js";
+import { codingMentorControllers } from "../controllers/codingMentor.js";
+import { listLiveClasses, getLiveClass } from '../controllers/liveClasses.js';
 import { interviewControllers } from "../controllers/interviews.js";
 import type { InterviewProvider } from "../services/interviewProvider.js";
 import { rateLimit } from "express-rate-limit";
@@ -57,6 +60,8 @@ export function studentRoutes(
   execution?: ExecutionProvider,
   executionRateLimit = 10,
   codingDemoMode = false,
+  aiSetupMessage?: string,
+  executionSetupMessage?: string,
 ) {
   const router = Router();
   router.use((_req, res, next) => {
@@ -74,6 +79,8 @@ export function studentRoutes(
     next();
   });
   router.use(requireAuth, requireRole("student"));
+  router.get('/live-classes', listLiveClasses);
+  router.get('/live-classes/:id', getLiveClass);
   router.get("/dashboard", async (req, res) => {
     res.json({
       success: true,
@@ -98,7 +105,7 @@ export function studentRoutes(
   router.get("/resumes/:id", getResume);
   router.put("/resumes/:id", updateResume);
   router.delete("/resumes/:id", deleteResume);
-  const interviews = interviewControllers(provider);
+  const interviews = interviewControllers(provider, aiSetupMessage);
   const aiLimit = rateLimit({
     windowMs: 60000,
     limit: 20,
@@ -112,6 +119,12 @@ export function studentRoutes(
       },
     },
   });
+  router.post("/resumes/:id/ai-suggestions", aiLimit, resumeSuggestionController(provider));
+  const mentor = codingMentorControllers(provider);
+  const mentorLimit = rateLimit({ windowMs: 60000, limit: 5, keyGenerator: req => req.user!.id as string,
+    message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many mentor requests. Please wait a minute.' } } });
+  router.get('/coding/mentor/config', mentor.config);
+  router.post('/coding/mentor', aiLimit, mentorLimit, mentor.generate);
   router.get("/interviews/config", interviews.config);
   router.get("/interviews", interviews.list);
   router.post("/interviews", aiLimit, interviews.start);
@@ -133,7 +146,7 @@ export function studentRoutes(
   router.get("/leaderboard", leaderboard);
   router.get("/leaderboard/options", leaderboardOptions);
   router.get("/leaderboard/:id", leaderboardProfile);
-  const coding = codingControllers(execution, codingDemoMode);
+  const coding = codingControllers(execution, codingDemoMode, executionSetupMessage);
   const codeLimit = rateLimit({
     windowMs: 60000,
     limit: executionRateLimit,
