@@ -842,3 +842,5 @@ already shared outside the LMS.
 Testing commands: `npm test`, `npm run typecheck`, `npm run build`. External
 responses are mocked; MongoDB tests use disposable instances. See
 `docs/IMPLEMENTATION.md` for endpoints, indexes and final verification evidence.
+
+Production deployment preparation and exact Render/Vercel settings are documented in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). Deployment requires separate approval.

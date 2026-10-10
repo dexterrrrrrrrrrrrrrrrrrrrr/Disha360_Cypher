@@ -17,6 +17,7 @@ export function createApp(options: {
   databaseConfigured: boolean;
   status?: typeof databaseStatus;
   secureCookies?: boolean;
+  cookieSameSite?: 'lax' | 'strict' | 'none';
   authRateLimit?: number;
   trustProxy?: boolean;
   allowDemoAccounts?: boolean;
@@ -27,6 +28,7 @@ export function createApp(options: {
   executionRateLimit?: number;
   codingDemoMode?: boolean;
 }) {
+  if (options.cookieSameSite === 'none' && !options.secureCookies) throw new Error('SameSite=None requires secure cookies');
   const app = express();
   app.locals.allowDemoAccounts = options.allowDemoAccounts ?? false;
   app.disable("x-powered-by");

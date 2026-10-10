@@ -223,7 +223,7 @@ it("production npm invocation fails before touching the unreachable destination 
       cwd: root,
       env: {
         ...process.env,
-        NODE_ENV: "production",
+        NODE_ENV: "production", CLIENT_ORIGIN: "https://frontend.example.test",
         MONGODB_URI:
           "mongodb://fixture-user:fixture-sensitive-password@127.0.0.1:1/production",
         CODING_SEED_DATABASE: "production",

@@ -1,3 +1,4 @@
+import { apiUrl } from './apiUrl';
 import type { AuthUser, Registration } from '../types';
 
 export class ApiError extends Error {
@@ -6,7 +7,7 @@ export class ApiError extends Error {
 async function call<T>(path: string, body?: object): Promise<T> {
   let response: Response;
   try {
-    response = await fetch(`/api/v1/auth/${path}`, { method: body ? 'POST' : 'GET', credentials: 'include', headers: body ? { 'Content-Type': 'application/json', 'X-Disha360-Request': '1' } : {}, ...(body ? { body: JSON.stringify(body) } : {}) });
+    response = await fetch(apiUrl(`/api/v1/auth/${path}`), { method: body ? 'POST' : 'GET', credentials: 'include', headers: body ? { 'Content-Type': 'application/json', 'X-Disha360-Request': '1' } : {}, ...(body ? { body: JSON.stringify(body) } : {}) });
   } catch { throw new ApiError('Unable to reach the server. Check your connection and try again.', 0); }
   let result;
   try { result = await response.json(); } catch { throw new ApiError('The server returned an unexpected response. Please try again.', response.status); }

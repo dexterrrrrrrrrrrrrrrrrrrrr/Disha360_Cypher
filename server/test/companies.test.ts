@@ -535,7 +535,7 @@ it("executes both real npm seed entry points, refuses unsafe targets before conn
     await connection.close();
   }
   for (const patch of [
-    { NODE_ENV: "production" },
+    { NODE_ENV: "production", CLIENT_ORIGIN: "https://frontend.example.test" },
     { COMPANY_SEED_DATABASE: "" },
     { COMPANY_SEED_DATABASE: "other_dev" },
   ]) {

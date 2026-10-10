@@ -84,6 +84,7 @@ const app = createApp({
   databaseConfigured: Boolean(env.MONGODB_URI),
   secureCookies: env.NODE_ENV === "production",
   trustProxy: env.TRUST_PROXY,
+  cookieSameSite: env.COOKIE_SAME_SITE,
   allowDemoAccounts: env.NODE_ENV === "development",
   interviewProvider: ai.provider,
   aiSetupMessage: ai.setupMessage,

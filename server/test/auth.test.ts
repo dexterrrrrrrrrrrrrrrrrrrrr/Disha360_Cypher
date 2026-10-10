@@ -190,7 +190,7 @@ describe('operator-only account commands', () => {
     expect(await User.countDocuments()).toBe(3);
   });
   it('blocks demo seeding outside development', async () => {
-    await expect(command('seedDemo', { NODE_ENV: 'production', SEED_DEMO_PASSWORD: password })).rejects.toMatchObject({ code: 1 });
+    await expect(command('seedDemo', { NODE_ENV: 'production', CLIENT_ORIGIN: 'https://frontend.example.test', SEED_DEMO_PASSWORD: password })).rejects.toMatchObject({ code: 1 });
     expect(await User.countDocuments()).toBe(0);
   });
   it('refuses to overwrite a non-demo account', async () => {
@@ -298,7 +298,7 @@ describe("explicit development staff provisioning", () => {
   );
   it("refuses production execution before connecting and omits secret values", async () => {
     const result = await provision("admin", {
-      NODE_ENV: "production",
+      NODE_ENV: "production", CLIENT_ORIGIN: "https://frontend.example.test",
       MONGODB_URI: "mongodb://127.0.0.1:1/live",
       PROVISION_DATABASE: "live",
     }).then(

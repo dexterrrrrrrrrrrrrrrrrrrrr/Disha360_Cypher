@@ -23,7 +23,7 @@ it("is opt-in and cannot activate outside development or in a production app", a
   expect(envSchema.parse({}).CODING_DEMO_MODE).toBe(false);
   expect(envSchema.parse({ CODING_DEMO_MODE: "true" }).CODING_DEMO_MODE).toBe(true);
   for (const NODE_ENV of ["production", "test"])
-    expect(envSchema.parse({ NODE_ENV, MONGODB_URI: "mongodb://localhost/test", CODING_DEMO_MODE: "true" }).CODING_DEMO_MODE).toBe(false);
+    expect(envSchema.parse({ NODE_ENV, CLIENT_ORIGIN: "https://frontend.example.test", MONGODB_URI: "mongodb://localhost/test", CODING_DEMO_MODE: "true" }).CODING_DEMO_MODE).toBe(false);
   const s = await studentAccount();
   expect((await studentCall(app(), s.cookie, "get", "/coding/config")).body.data.demoMode).toBe(false);
   expect((await studentCall(app(), s.cookie, "post", "/coding/demo/run", input)).status).toBe(404);

@@ -5,7 +5,7 @@ import { protectMutations, requireAuth, requireRole } from '../middleware/auth.j
 import { AppError } from '../utils/AppError.js';
 import { databaseStatus } from '../config/database.js';
 
-export function authRoutes(options: { clientOrigin: string; secureCookies: boolean; status?: typeof databaseStatus; authRateLimit?: number }) {
+export function authRoutes(options: { clientOrigin: string; secureCookies: boolean; cookieSameSite?: 'lax' | 'strict' | 'none'; status?: typeof databaseStatus; authRateLimit?: number }) {
   const router = Router();
   router.use((_req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
   router.use(protectMutations(options.clientOrigin));
@@ -14,9 +14,9 @@ export function authRoutes(options: { clientOrigin: string; secureCookies: boole
     if ((options.status || databaseStatus)() !== 'connected') throw new AppError(503, 'DATABASE_UNAVAILABLE', 'The database is unavailable. Please try again shortly.');
     next();
   });
-  router.post('/register', limit, register(options.secureCookies));
-  router.post('/login', limit, login(options.secureCookies));
-  router.post('/logout', logout(options.secureCookies));
+  router.post('/register', limit, register(options.secureCookies, options.cookieSameSite));
+  router.post('/login', limit, login(options.secureCookies, options.cookieSameSite));
+  router.post('/logout', logout(options.secureCookies, options.cookieSameSite));
   router.get('/me', requireAuth, me);
   // These return only the current user's profile. No account listing or arbitrary
   // user-ID route is exposed before staff management is implemented.

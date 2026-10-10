@@ -10,12 +10,16 @@ export function readToken(req: Request): string | null {
   const token = cookie?.slice(COOKIE_NAME.length + 1);
   return token && /^[a-f0-9]{64}$/.test(token) ? token : null;
 }
-const cookieOptions = (secure: boolean) => ({ httpOnly: true, secure, sameSite: 'lax' as const, path: '/api' });
-export async function createSession(req: Request, res: Response, userId: string, secure: boolean) {
+export type CookieSameSite = 'lax' | 'strict' | 'none';
+const cookieOptions = (secure: boolean, sameSite: CookieSameSite) => {
+  if (sameSite === 'none' && !secure) throw new Error('SameSite=None requires secure cookies');
+  return { httpOnly: true, secure, sameSite, path: '/api' };
+};
+export async function createSession(req: Request, res: Response, userId: string, secure: boolean, sameSite: CookieSameSite = 'lax') {
   const old = readToken(req);
   if (old) await Session.deleteOne({ tokenHash: tokenHash(old) });
   const token = randomBytes(32).toString('hex');
   await Session.create({ tokenHash: tokenHash(token), userId, expiresAt: new Date(Date.now() + SESSION_MS) });
-  res.cookie(COOKIE_NAME, token, { ...cookieOptions(secure), maxAge: SESSION_MS });
+  res.cookie(COOKIE_NAME, token, { ...cookieOptions(secure, sameSite), maxAge: SESSION_MS });
 }
-export function clearSessionCookie(res: Response, secure: boolean) { res.clearCookie(COOKIE_NAME, cookieOptions(secure)); }
+export function clearSessionCookie(res: Response, secure: boolean, sameSite: CookieSameSite = 'lax') { res.clearCookie(COOKIE_NAME, cookieOptions(secure, sameSite)); }
