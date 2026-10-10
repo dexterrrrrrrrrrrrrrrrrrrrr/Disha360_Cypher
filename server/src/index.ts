@@ -1,3 +1,4 @@
+import { BadgeAward } from "./models/BadgeAward.js";
 import { BatchAssignment } from "./models/BatchAssignment.js";
 import { Company, CompanyProgress } from "./models/Company.js";
 import { LearningModule } from "./models/LearningModule.js";
@@ -35,6 +36,7 @@ if (env.MONGODB_URI) {
     ]);
     await LearningModule.createIndexes();
     await BatchAssignment.createIndexes();
+    await BadgeAward.createIndexes();
     await CodeDraft.createIndexes();
     await Promise.all([
       CodingProblem.createIndexes(),

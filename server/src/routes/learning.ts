@@ -271,6 +271,15 @@ export function learningRoutes(origin: string, status = databaseStatus) {
           studentId: req.user!._id,
           moduleKey: `module:${m.id}`,
         };
+        const previous =
+          action === "completion"
+            ? await LearningProgress.findOne(filter)
+            : null;
+        const previouslyComplete =
+          previous &&
+          progressDTO(m, previous).totalLessons > 0 &&
+          progressDTO(m, previous).completedLessons ===
+            progressDTO(m, previous).totalLessons;
         const update = {
           $set: {
             moduleId: m._id,
@@ -315,6 +324,25 @@ export function learningRoutes(origin: string, status = databaseStatus) {
             `Completed ${m.lessons.find((l) => l.id === lessonId)!.title}`,
             `lesson:${lessonId}`,
           );
+        if (
+          action === "completion" &&
+          "complete" in input &&
+          input.complete &&
+          progress.totalLessons > 0 &&
+          progress.completedLessons === progress.totalLessons
+        ) {
+          // Preserve the first real transition. Historical recognition must never become a new streak day.
+          if (!previouslyComplete && !previous?.engagementRecognizedAt)
+            await LearningProgress.updateOne(
+              { _id: p._id, engagementCompletedAt: null },
+              { $set: { engagementCompletedAt: p.updatedAt } },
+            );
+          else if (previouslyComplete && !previous?.engagementCompletedAt)
+            await LearningProgress.updateOne(
+              { _id: p._id, engagementRecognizedAt: null },
+              { $set: { engagementRecognizedAt: new Date() } },
+            );
+        }
         res.json({ success: true, data: { progress } });
       },
     );

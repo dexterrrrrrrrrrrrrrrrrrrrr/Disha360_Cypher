@@ -485,3 +485,100 @@ server/test/helpers/staffDatabase.ts
 server/test/staff.test.ts
 server/test/staffManagement.test.ts
 ```
+
+## Checkpoint 13 — engagement system
+
+Base `8a437071f026dd7199128c9483fe7d74de2f6f7d`. Extends the existing Student/staff architecture; Checkpoint 14 and all prior functionality remain. Checkpoint 15 is not implemented. No application dependency, paid service, credential, environment variable or seed command is added.
+
+### Sources and points
+
+All points are recalculated on the backend from actual MongoDB records. No client score input or point-writing endpoint exists.
+
+- **MCQ:** submitted `TestAttempt`, valid finalized timestamp not in the future, numeric finite normalized percentage and at least one answered question (`correct + incorrect > 0`). Aggregate by Student/assessment ID across retakes and versions. Contribution = rounded clamped best percentage (0–100). A lower/equal retake adds nothing; a better retake replaces the prior contribution. Completion count is distinct assessments, including genuine answered zero results. Unanswered-only expiry, active attempts and legacy `AssessmentAssignment` counters do not earn engagement points. Finalized grading and attempt timers are unchanged.
+- **Coding:** completed `CodingSubmission` with Accepted, score 100 and a valid finished timestamp; group by Student/problem ID using earliest accepted finish. Join current problem metadata only: Easy 50, Medium 100, Hard 150. Repeats, failed runs and System Errors earn no additional points/day. No source, diagnostics or hidden cases are queried/serialized. Current difficulty is used (changing/removing trusted problem metadata can change recomputed coding totals); the existing judge is unchanged and absent providers never invent solves.
+- **Learning:** progress with a real module ID and either an already verified completion/recognition marker or all non-empty current lesson IDs present in saved completion IDs. Forty points per distinct module, once. The server saves the first exact completion time on a genuine incomplete-to-full completion transition. Already-full historical progress may be recognized separately without assigning a completion date. Recognition preserves the achieved milestone across later unchecking/content edits, but cannot become a historical streak day. Standalone legacy counters without module identity earn nothing. Empty modules, visits and partial lessons do not qualify. Learning completion remains self-marked progress, not proof of mastery.
+
+Deduplication is by resource identity, not number of activity events or versions. Company checklist changes, login, dashboard visits, resume/interview actions and failed code never enter point calculation.
+
+### Streak policy and badges
+
+UTC is the consistent calendar policy, independent of browser timezone/DST. Qualifying days are answered finalized MCQ completion dates (allowed retakes may maintain a day), first Accepted finish dates and first exact full-module completion dates. Same-day activities are deduplicated. Future/invalid dates are excluded. Current streak ends today or yesterday; after a missing full UTC day it is zero. Longest streak uses the full qualifying-day set; last active day is null with no trustworthy qualifying timestamp. Unknown historical learning dates are disclosed in the interface. Repeated completion of an already-full legacy module cannot manufacture a timestamp. Existing visit-inclusive activity/check-in records remain separate and are never used by engagement streaks.
+
+| Badge key | Actual criterion |
+|---|---|
+| `first-assessment` | One qualifying finalized answered assessment |
+| `first-code` | One distinct Accepted coding problem |
+| `five-code` | Five distinct Accepted problems |
+| `learning-explorer` | One verified full module |
+| `seven-day` | A run of seven consecutive qualifying UTC days (lifetime achievement) |
+| `consistent-performer` | Best actual normalized scores at least 70% on five distinct assessments |
+
+Badge criteria are evaluated automatically on authorized engagement/dashboard/leaderboard views and saved with `$setOnInsert`; no claim button. Unique `(studentId,key)` enforces idempotency even during concurrent views. Earned dates use actual qualifying evidence; unknown-date legacy learning badges record first recognition time. Seven-day earned date is the UTC calendar day the run first reached seven. Qualifying score dates track when each assessment first reached 70%, not when an earlier low attempt was completed. Previously earned badges remain lifetime awards even when a resource later becomes unavailable; points are recomputed from available authoritative sources.
+
+### Models, bounds and authorization
+
+One new collection: `BadgeAward` (Student reference, fixed catalog key, earnedAt, timestamps; unique Student/key index). Existing `LearningProgress` gains optional `engagementCompletedAt` and `engagementRecognizedAt` timestamps. Neither is accepted in Student input. `User` gains an additive `(role,isDemo,_id)` index for role-filtered leaderboard lookup; password handling, registration and sessions are unchanged. Startup ensures indexes but does not seed/provision/rewrite existing data. Read-time recognition writes occur only for real previously completed progress; no bulk startup migration.
+
+Reuse existing TestAttempt, CodingSubmission, CodingProblem, LearningModule, Batch and Enrollment. Aggregations project only safe achievement fields, group in MongoDB and limit output to 20,001 rows to detect an over-limit 20,000-record view. Each aggregation has a ten-second timeout. User lists stop at 501 to detect over 500 Students; rankings never silently use a truncated population. UI pagination is 25; current Student rank is calculated in the full authorized scope before slicing. Batch selectors cap at 500 active batches and use bounded/time-limited metadata queries. Student selectors query only enrolled batch IDs; Trainer selectors query only assigned active batches. Indexes on existing source/student fields are reused. Over-limit views return explicit 422 and require narrowing; larger deployments need incremental/precomputed aggregates and paginated metadata. This prototype makes no unlimited-scale performance claim.
+
+Deterministic order: total points descending, completed assessments descending, solved coding descending, completed modules descending, stable Student ID ascending. Ranks are ordinal 1..N, including genuine zero-point participants. The current rank is null when no eligible membership places the Student in the selected scope.
+
+All endpoints reuse authenticated sessions, connected-database checks, safe centralized errors, no-store responses and existing global API rate limits. Global means this application's institution, with environment demo visibility preserved; it is not a cross-institution directory. Student batch scope requires a current active enrollment in an active batch. Trainer scope is the union of active members of their active assigned batches; unrelated/archived batches and unrelated achievement profiles return 404. Admin may view all visible Students and filter active batches. No role writes or public privileged registration are introduced.
+
+Student-public leaderboard/profile DTOs whitelist Student ID, display name, points, achievement counts and unlocked badge names/keys; **no email, department, answer selections/keys, individual grades, source, hidden tests, transcripts, tokens or private activity dates**. Own/full achievement DTOs (including streak dates and locked criteria) are available only to the authenticated Student or currently authorized staff. Staff view URLs do not grant access by themselves. No public unauthenticated routes are added.
+
+### APIs and routes
+
+| Method | Path | Scope |
+|---|---|---|
+| GET | `/api/v1/student/engagement` | Own points, breakdown, counts, earned/locked badges, meaningful streak and unknown-date disclosure; rejects identity/points filters |
+| GET | `/api/v1/student/leaderboard?batchId=&page=` | Global or own active batch; current rank and paginated public rows |
+| GET | `/api/v1/student/leaderboard/options` | Own active batch choices, independently available when a global ranking exceeds limits |
+| GET | `/api/v1/student/leaderboard/:id?batchId=` | Safe public participant profile within visible selected scope |
+| GET | `/api/v1/staff/leaderboard?batchId=&page=` | Trainer active assigned members / Admin institution; Admin engagement statistics |
+| GET | `/api/v1/staff/leaderboard/options` | Authorized active batch choices |
+| GET | `/api/v1/staff/engagement/:id?batchId=` | Full authorized Student achievements and streak (no underlying private attempts/source) |
+
+Student pages `/leaderboard`, `/leaderboard/:id`, `/achievements`; staff `/manage/:role/leaderboard`, `/manage/:role/achievements/:id`, guarded by existing React role routes. Student dashboard adds reusable `DashboardEngagement`; existing readiness/grading/analytics data remains unchanged. The old activity card is explicitly labeled visit-inclusive activity, not the meaningful achievement streak. Student and staff sidebars have functioning links; admin statistics distinguish Students in scope from Students with actual achievements. Empty, zero, loading, retry/error and locked/earned states are explicit.
+
+### Local checks and files
+
+Run `npm test`, `npm run typecheck`, `npm run build`. Targeted suites: `npm run test -w server -- test/engagement.test.ts`; `npm run test -w client -- test/engagementUI.test.tsx`. All database tests use isolated MongoDB, never a production/Atlas connection. README has exact local role/progress walkthroughs; no service key is required to view engagement. Existing code execution still requires a real isolated provider for new accepted solves.
+
+New: server `models/BadgeAward.ts`, `services/engagement.ts`, `controllers/engagement.ts`, `test/engagement.test.ts`; client `types/engagement.ts`, `hooks/useEngagementData.ts`, `components/EngagementSummary.tsx`, `pages/Leaderboard.tsx`, `pages/Achievements.tsx`, `test/engagementUI.test.tsx`. Modified: User/Preparation models, index startup, Student/staff route registration, narrowly scoped learning completion metadata, StudentDashboard integration, protected client routes and sidebar links, README/implementation/checkpoint documentation. Formatting touched only relevant modified files. No existing assessment grader, coding judge, AI provider, authentication middleware/session logic or watcher changes.
+
+### Verified delivery
+
+- Backend phase: **234 tests** passed with all source/test TypeScript checks and both production builds. Frontend integration and historical-date safeguards grew coverage to **243 tests**. Final full run: **222 server tests in 21 files plus 21 client tests in 2 files**, no skipped tests; client/server source/test TypeScript checks and both production builds passed. A final breadcrumb-only adjustment passed client source/test types and a client production rebuild.
+- New coverage includes best-score retakes and versions, unanswered/future/demo exclusions, coding difficulty and duplicate solves, actual first module completion, legacy recognition without fabricated dates, repeated legacy completion guard, UTC midnight/yesterday/gaps/leap dates, all six badges and concurrent unique awards, deterministic ties, current rank outside a page, active batch selectors/isolation, Student/staff authorization, strict identity/point input rejection, privacy, output limits, locked/earned UI, dashboard links and loading/errors. Original 221 regressions (authentication/provisioning, Student flows, management and watcher) remain passing.
+- Chromium used actual role login and HTTP requests through Vite into disposable MongoDB, with randomly generated temporary credentials. It verified zero-point/locked states, a real backend-graded Student attempt plus a Student-marked full module (140 points, two badges and one UTC streak day), refresh persistence, global/batch ranking, public profile/dashboard, Trainer scoped achievements and unrelated-batch/Student denials, Admin statistics/filters, mobile navigation and 375/768/1440px pages. No browser runtime errors or page overflow. Screenshots were visually inspected. Requests respected unchanged application API limits. Test-bank fixtures did not execute code or call AI; no live provider, Atlas or production database was used.
+- Git candidate review and `git diff --check` passed: no secrets/private .env/generated/dependency files; no staged files, commit or push. No additional checkpoints implemented. Existing lazy Monaco chunk advisory remains.
+
+Batch filters choose eligible participants; each participant's points reflect all of their eligible preparation, not only that batch's assigned resources. Badges are lifetime awards, while point/streak calculations depend on available source records. Trusted deletion of source/problem metadata can change recomputed totals; production-scale immutable event snapshots are future work, not claimed here.
+
+Checkpoint 13 working-tree file inventory:
+
+```text
+README.md
+client/src/layouts/AppLayout.tsx
+client/src/main.tsx
+client/src/pages/StudentDashboard.tsx
+docs/CHECKPOINTS.md
+docs/IMPLEMENTATION.md
+server/src/index.ts
+server/src/models/Preparation.ts
+server/src/models/User.ts
+server/src/routes/learning.ts
+server/src/routes/staff.ts
+server/src/routes/student.ts
+client/src/components/EngagementSummary.tsx
+client/src/hooks/useEngagementData.ts
+client/src/pages/Achievements.tsx
+client/src/pages/Leaderboard.tsx
+client/src/types/engagement.ts
+client/test/engagementUI.test.tsx
+server/src/controllers/engagement.ts
+server/src/models/BadgeAward.ts
+server/src/services/engagement.ts
+server/test/engagement.test.ts
+```

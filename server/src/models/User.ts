@@ -12,6 +12,7 @@ const userSchema = new Schema({
   isDemo: { type: Boolean, default: false, select: false }
 }, { timestamps: true, autoCreate: false, autoIndex: false });
 userSchema.set('toJSON', { transform: (_doc, ret) => { const { passwordHash, isDemo, ...safe } = ret; return safe; } });
+userSchema.index({ role: 1, isDemo: 1, _id: 1 });
 export const User = mongoose.model('User', userSchema);
 export type UserDocument = mongoose.HydratedDocument<mongoose.InferSchemaType<typeof userSchema>>;
 export function publicUser(user: UserDocument) {

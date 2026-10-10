@@ -136,7 +136,7 @@ curl -i http://localhost:4000/api/v1/auth/me # 401 when no cookie is supplied
 
 `client/src/features/auth` contains session state and protected routing; `layouts/AuthLayout.tsx` preserves the shared sign-in design. Backend modules separate models, validators, services, controllers, middleware, routes, and operator utilities. npm workspaces keep installation simple.
 
-Checkpoints 1–4, 7 and 8 are implemented; Checkpoints 5–6 await live provider verification. Coding workspace/judge (9–10) are implemented with live-provider verification pending. Checkpoint 12 company preparation is now implemented; Checkpoint 14 management is implemented below; Checkpoints 13 and 15 remain out of scope. Your locally verified Atlas connection was not re-tested here because its credentials are not available in this cloud runtime. The auth flows were verified using an isolated actual MongoDB server. See [docs/CHECKPOINTS.md](docs/CHECKPOINTS.md) for status.
+Checkpoints 1–4, 7 and 8 are implemented; Checkpoints 5–6 await live provider verification. Coding workspace/judge (9–10) are implemented with live-provider verification pending. Checkpoint 12 company preparation is now implemented; Checkpoint 14 management and Checkpoint 13 engagement are implemented below; Checkpoint 15 remains reserved for final UI polish. Your locally verified Atlas connection was not re-tested here because its credentials are not available in this cloud runtime. The auth flows were verified using an isolated actual MongoDB server. See [docs/CHECKPOINTS.md](docs/CHECKPOINTS.md) for status.
 
 ## Student preparation features (Checkpoints 2–8)
 
@@ -491,3 +491,38 @@ Limitations: reports cap each filtered export at 1,000 Students (narrow filters 
 See [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md) for APIs, models, calculations, permissions and final verification results.
 
 Final verification: **221 tests passed**, all client/server/source-and-test TypeScript checks and both production builds passed. Chromium verified actual authoring/import/assignment/completion/report/export/workload workflows and 375/768/1440px management layouts/mobile navigation with no runtime errors or overflow. Security tests verify backend scopes and protected answer keys. No production database or live provider was contacted; nothing is committed or pushed.
+
+## Leaderboard, badges and activity streaks — Checkpoint 13
+
+Student navigation now includes **Leaderboard** and **Achievements**. The dashboard shows earned badges, point breakdown, meaningful current/longest streak and last active UTC day. The existing visit-inclusive activity indicator is separate and never feeds engagement points or streaks.
+
+Points are calculated on the backend from saved records:
+
+| Activity | Points | Repeat rule |
+|---|---:|---|
+| Finalized assessment with at least one answered question | Rounded best normalized score, 0–100 | Best score once per assessment ID, across versions and retakes; improving it adds only the difference |
+| Accepted coding challenge | Easy 50 / Medium 100 / Hard 150 | Once per distinct problem; uses its current database difficulty |
+| Verified full learning module | 40 | Once per module; later unchecking/recompletion cannot earn more |
+
+Unanswered-only expiries, failed code, login, page visits, company checklist clicks and raw legacy counters earn nothing. Valid zero-scoring answered assessments remain completed achievements with zero points. Rankings sort points descending, then completed assessments, solved coding problems and completed modules descending, finally Student ID ascending. Ranks are ordinal and deterministic.
+
+Six badges have clear criteria: first assessment; first accepted problem; five distinct accepted problems; one full module (Learning Explorer); seven consecutive meaningful UTC days; best scores of at least 70% on five distinct assessments (Consistent Performer). Badge awards are persisted with a unique Student/key index. Criteria are verified automatically when engagement, dashboard or leaderboard views load; there is no claim or points-writing button.
+
+**UTC streak policy:** one day per UTC calendar date, regardless of how many activities occur. Answered finalized assessments (including allowed retakes), each first Accepted coding solve and each first module completion qualify. A current streak may end today or yesterday; missing a full UTC day resets current streak to zero. Longest streak and badges remain. This is independent of the device's local timezone.
+
+Older complete learning progress can earn points after verification of current lesson IDs. When its exact completion date is unknown, recognition is saved separately and **no historical streak date is invented**. New completions save their actual first-completion timestamp. Repeating an already-full historical module does not manufacture a new completion date. The interface explains any such unknown dates. Learning completion is self-marked progress, not proof of mastery.
+
+### Local testing
+
+1. Use a private development MongoDB configuration and existing account provisioning; run `npm ci`, `npm test`, `npm run typecheck`, `npm run build`, then `npm run dev`.
+2. Sign in as Student and open Leaderboard/Achievements. With no qualifying records, expect zero points, locked badges and no meaningful streak, even after visiting the dashboard.
+3. Complete an assessment with at least one selected answer. Open Achievements: its best normalized grade contributes up to 100 points and unlocks the first-assessment badge. Retake it: equal/lower grades add no points; a higher grade replaces the prior contribution.
+4. Complete every lesson of a published module: expect 40 points and Learning Explorer. Refresh, uncheck/recomplete or visit: no duplicate points or new module streak day.
+5. With a genuinely configured isolated coding provider, earn an Accepted verdict to test difficulty points. Without a provider, there are no pretend solves or bonus points; existing setup-required states remain.
+6. In an active batch, choose that batch in Leaderboard scope. Current rank remains visible even outside the current page. Peer profiles show display names, counts and badges without email, answer keys or private performance details.
+7. As Trainer, open Leaderboard to see assigned active batch members and their authorized achievements. Unrelated/archived batches and unrelated Student achievement URLs return 404. As Admin, inspect global engagement totals and filter active batches.
+8. Check phone/tablet/desktop navigation and refresh persistence. Streak boundary tests use fixed UTC dates in isolated automated tests; never edit production records to create streaks.
+
+No new environment variables, paid services, application dependencies or seed commands are required. Prototype limits: 500 Students per leaderboard, 25 rows/page, 500 active batches per selector, 20,000 grouped records per activity kind, and ten-second aggregation timeouts. Over-limit views fail explicitly rather than showing incomplete ranks; narrow to an active batch. Larger deployments need precomputed totals/incremental workers and query pagination. No caching lag is introduced here. Existing live OpenAI/Judge0 and PDF-upload limitations remain. Checkpoint 15 is reserved for final UI polish; this work implements only Checkpoint 13.
+
+Checkpoint 13 verification: **243 tests passed**, all client/server source/test TypeScript checks and both builds passed. Chromium verified actual saved points/badges/streaks, Student/staff access and 375/768/1440px layouts without page errors or overflow. No production data or live provider was used; the work remains uncommitted. Full endpoint/file/permission evidence is in [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md).

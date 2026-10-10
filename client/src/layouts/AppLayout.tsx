@@ -32,6 +32,9 @@ export function AppLayout({
   const auth = useAuth();
   const location = useLocation();
   const destinations: Record<string, string> = {
+    Leaderboard:
+      role === "student" ? "/leaderboard" : `/manage/${role}/leaderboard`,
+    Achievements: "/achievements",
     "Trainers & accounts": "/manage/admin/trainers",
     Assignments: `/manage/${role}/assignments`,
     "Reports & analytics": `/manage/${role}/reports`,
@@ -78,6 +81,7 @@ export function AppLayout({
     ["Mock interviews", MessageSquare],
     ["Company preparation", Users],
     ["Leaderboard", Trophy],
+    ["Achievements", Trophy],
   ] as const;
   const staff = [
     ["Batches & students", Users],
@@ -86,6 +90,7 @@ export function AppLayout({
     ["Questions & tests", FileText],
     ["Assignments", BriefcaseBusiness],
     ["Reports & analytics", BarChart3],
+    ["Leaderboard", Trophy],
     ...(role === "admin"
       ? [["Trainers & accounts", ShieldCheck] as const]
       : []),
@@ -201,26 +206,32 @@ export function AppLayout({
             <span className="text-sm text-slate-500">
               Workspace <span className="mx-2 text-slate-300">/</span>
               <span className="font-medium text-ink">
-                {location.pathname.startsWith("/manage")
-                  ? "Staff management"
-                  : location.pathname.startsWith("/companies")
-                    ? "Company preparation"
-                    : location.pathname.startsWith("/learning")
-                      ? "Learning modules"
-                      : location.pathname.startsWith("/coding")
-                        ? "Coding practice"
-                        : location.pathname.startsWith("/resumes")
-                          ? "Resume studio"
-                          : location.pathname === "/resume-analyzer"
-                            ? "ATS analyzer"
-                            : location.pathname.startsWith("/interviews")
-                              ? "Mock interviews"
-                              : location.pathname.startsWith("/assessments") ||
-                                  location.pathname.startsWith("/attempts")
-                                ? "Assessments"
-                                : location.pathname === "/analytics"
-                                  ? "Performance analytics"
-                                  : "Overview"}
+                {location.pathname.startsWith("/leaderboard")
+                  ? "Leaderboard"
+                  : location.pathname === "/achievements"
+                    ? "Achievements"
+                    : location.pathname.startsWith("/manage")
+                      ? "Staff management"
+                      : location.pathname.startsWith("/companies")
+                        ? "Company preparation"
+                        : location.pathname.startsWith("/learning")
+                          ? "Learning modules"
+                          : location.pathname.startsWith("/coding")
+                            ? "Coding practice"
+                            : location.pathname.startsWith("/resumes")
+                              ? "Resume studio"
+                              : location.pathname === "/resume-analyzer"
+                                ? "ATS analyzer"
+                                : location.pathname.startsWith("/interviews")
+                                  ? "Mock interviews"
+                                  : location.pathname.startsWith(
+                                        "/assessments",
+                                      ) ||
+                                      location.pathname.startsWith("/attempts")
+                                    ? "Assessments"
+                                    : location.pathname === "/analytics"
+                                      ? "Performance analytics"
+                                      : "Overview"}
               </span>
             </span>
           </div>

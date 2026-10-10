@@ -1,3 +1,8 @@
+import {
+  leaderboard,
+  staffAchievements,
+  leaderboardOptions,
+} from "../controllers/engagement.js";
 import { allAssignments } from "../controllers/staffAssignments.js";
 import { trainers, assignTrainer } from "../controllers/staffTrainers.js";
 import * as reports from "../controllers/staffReports.js";
@@ -39,6 +44,9 @@ export function staffRoutes(origin: string, status = databaseStatus) {
   });
   r.use(requireAuth, requireRole("trainer", "admin"));
   r.get("/dashboard", staffDashboard);
+  r.get("/leaderboard", leaderboard);
+  r.get("/leaderboard/options", leaderboardOptions);
+  r.get("/engagement/:id", staffAchievements);
   r.get("/batches", listBatches);
   r.get("/batches/:id", getBatch);
   r.post("/batches", requireRole("admin"), createBatch);

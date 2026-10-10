@@ -1,3 +1,5 @@
+import { Leaderboard } from "./pages/Leaderboard";
+import { Achievements, LeaderboardProfile } from "./pages/Achievements";
 import { StaffAssignmentDirectory } from "./pages/StaffAssignmentDirectory";
 import { StaffTrainers } from "./pages/StaffTrainers";
 import { StaffReports } from "./pages/StaffReports";
@@ -51,6 +53,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           <Route path="/register" element={<Register />} />
           <Route element={<ProtectedRoute role="student" />}>
             <Route path="/dashboard/student" element={<StudentDashboard />} />
+            <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/leaderboard/:id" element={<LeaderboardProfile />} />
+            <Route path="/achievements" element={<Achievements />} />
             <Route path="/resumes" element={<Resumes />} />
             <Route path="/resumes/new" element={<ResumeEditor />} />
             <Route path="/resumes/:id" element={<ResumeEditor />} />
@@ -75,6 +80,14 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           </Route>
           {(["trainer", "admin"] as const).map((role) => (
             <Route key={role} element={<ProtectedRoute role={role} />}>
+              <Route
+                path={`/manage/${role}/leaderboard`}
+                element={<Leaderboard role={role} />}
+              />
+              <Route
+                path={`/manage/${role}/achievements/:id`}
+                element={<Achievements role={role} />}
+              />
               <Route
                 path={`/manage/${role}/assessments`}
                 element={<StaffAssessments role={role} />}
