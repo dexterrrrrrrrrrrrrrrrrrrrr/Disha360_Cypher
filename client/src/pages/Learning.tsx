@@ -215,6 +215,7 @@ export function LearningReader() {
                     className={`w-full rounded p-3 text-left text-sm ${l.id === active ? "bg-indigo-50 text-brand" : "hover:bg-slate-50"}`}
                     disabled={busy}
                     key={l.id}
+                    aria-current={l.id === active ? "step" : undefined}
                     onClick={() => void visit(l.id!)}
                   >
                     {i + 1}. {l.title}

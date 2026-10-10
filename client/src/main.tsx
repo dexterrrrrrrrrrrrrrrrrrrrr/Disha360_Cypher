@@ -1,4 +1,5 @@
 import { Leaderboard } from "./pages/Leaderboard";
+import { RouteAccessibility } from "./components/RouteAccessibility";
 import { Achievements, LeaderboardProfile } from "./pages/Achievements";
 import { StaffAssignmentDirectory } from "./pages/StaffAssignmentDirectory";
 import { StaffTrainers } from "./pages/StaffTrainers";
@@ -142,6 +143,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           ))}
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
+        <RouteAccessibility />
       </AuthProvider>
     </BrowserRouter>
   </React.StrictMode>,

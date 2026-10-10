@@ -261,6 +261,7 @@ export function LearningEditor() {
                 <textarea
                   className="input min-h-24"
                   maxLength={3000}
+                  aria-label="Description"
                   value={module.description}
                   onChange={(e) =>
                     setModule((m) => ({ ...m, description: e.target.value }))
@@ -273,6 +274,7 @@ export function LearningEditor() {
                 </span>
                 <textarea
                   className="input"
+                  aria-label="Learning objectives (one per line)"
                   value={module.objectives.join("\n")}
                   onChange={(e) =>
                     setModule((m) => ({
@@ -328,6 +330,7 @@ export function LearningEditor() {
                       className="input min-h-36"
                       required={l.kind === "text"}
                       maxLength={10000}
+                      aria-label={l.kind === "text" ? "Lesson content" : "Resource notes (optional)"}
                       value={l.body}
                       onChange={(e) => editLesson(i, { body: e.target.value })}
                     />

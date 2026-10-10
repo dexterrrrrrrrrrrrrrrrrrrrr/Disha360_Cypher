@@ -6,6 +6,7 @@ const CodeEditor = lazy(() => import("../features/coding/Editor"));
 import { useStudentData } from "../hooks/useStudentData";
 import { studentRequest } from "../services/student";
 import { PageHeading, ErrorNotice, Skeleton } from "../components/StudentUI";
+import { EditorBoundary } from "../components/EditorBoundary";
 export interface Execution {
   verdict: string;
   stdout: string;
@@ -42,6 +43,7 @@ export function Workspace({
     "/coding/config",
   );
   const [language, setLanguage] = useState<Language>("python");
+  const [plainEditor, setPlainEditor] = useState(false);
   const [source, setSource] = useState(templates.python);
   const [stdin, setStdin] = useState(sample);
   const [version, setVersion] = useState(0);
@@ -53,6 +55,12 @@ export function Workspace({
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [execution, setExecution] = useState<Execution | null>(null);
+  const plainInput = <label className="block"><span className="field-label">Solution code</span><textarea className="input min-h-[420px] font-mono" aria-label="Solution code" spellCheck={false} maxLength={30000} aria-describedby="editor-help" value={source} disabled={!!busy} onChange={e => { setSource(e.target.value); setDirty(true); }} /></label>;
+  useEffect(() => {
+    const warn = (event: BeforeUnloadEvent) => { if (dirty) event.preventDefault(); };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
   useEffect(() => {
     let alive = true;
     setLoading(true);
@@ -216,7 +224,10 @@ export function Workspace({
       ) : loading ? (
         <Skeleton />
       ) : (
-        <Suspense fallback={<Skeleton />}>
+        <>
+        <button type="button" className="mb-3 text-sm font-semibold text-brand" aria-pressed={plainEditor} onClick={() => setPlainEditor(v => !v)}>{plainEditor ? "Use syntax highlighting editor" : "Use plain text editor"}</button>
+        <p id="editor-help" className="mb-3 text-xs leading-6 text-slate-600">The plain text editor uses standard keyboard navigation. In the syntax editor, press Ctrl+M (Control+Shift+M on Mac) to toggle whether Tab moves focus. Both editors save the same draft.</p>
+        {plainEditor ? plainInput : <EditorBoundary fallback={plainInput}><Suspense fallback={<Skeleton />}>
           <CodeEditor
             language={language}
             source={source}
@@ -226,7 +237,8 @@ export function Workspace({
               setDirty(true);
             }}
           />
-        </Suspense>
+        </Suspense></EditorBoundary>}
+        </>
       )}
       <p role="status" className="text-xs text-slate-500">
         {message ||

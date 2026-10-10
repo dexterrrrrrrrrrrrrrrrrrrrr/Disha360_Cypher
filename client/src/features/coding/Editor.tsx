@@ -10,6 +10,16 @@ self.MonacoEnvironment = {
   getWorker: (_id: string, label: string) => new EditorWorker(),
 };
 loader.config({ monaco });
+monaco.editor.defineTheme("disha-accessible", {
+  base: "hc-light",
+  inherit: true,
+  rules: [],
+  colors: {
+    "editorLineNumber.foreground": "#475569",
+    "editorLineNumber.activeForeground": "#17233b",
+    "editorLineNumber.dimmedForeground": "#475569",
+  },
+});
 export default function CodeEditor({
   language,
   source,
@@ -25,6 +35,7 @@ export default function CodeEditor({
     <div className="overflow-hidden rounded-lg border border-slate-200">
       <Editor
         height="420px"
+        theme="disha-accessible"
         language={language}
         value={source}
         onChange={(s) => onChange(s || "")}
@@ -41,6 +52,7 @@ export default function CodeEditor({
           wordWrap: "on",
           automaticLayout: true,
           scrollBeyondLastLine: false,
+          accessibilitySupport: "on",
           ariaLabel: "Solution code",
           padding: { top: 16 },
         }}

@@ -111,7 +111,7 @@ export function StudentDashboard() {
                 },
                 {
                   label: "Daily visit activity",
-                  value: `${data.streak.days} days`,
+                  value: `${data.streak.days} ${data.streak.days === 1 ? "day" : "days"}`,
                   Icon: Flame,
                   note: "UTC calendar · visits and saved activity",
                 },

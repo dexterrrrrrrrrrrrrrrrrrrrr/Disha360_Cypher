@@ -56,13 +56,13 @@ export function EngagementStats({ data }: { data: Engagement }) {
           },
           {
             label: "Current streak",
-            value: `${data.streak.current} days`,
+            value: `${data.streak.current} ${data.streak.current === 1 ? "day" : "days"}`,
             Icon: Flame,
             note: "Qualifying completions · UTC",
           },
           {
             label: "Longest streak",
-            value: `${data.streak.longest} days`,
+            value: `${data.streak.longest} ${data.streak.longest === 1 ? "day" : "days"}`,
             Icon: Flame,
             note: "Consecutive UTC calendar days",
           },

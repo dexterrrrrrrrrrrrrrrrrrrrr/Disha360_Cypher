@@ -18,7 +18,7 @@ Checkpoints 2–8 were developed sequentially on the existing Disha360 foundatio
 | 12 | Company-wise preparation | Complete | Six explicitly seeded illustrative profiles; student directory/search/filter/detail, private persistent complete/incomplete checklist progress, real published-resource recommendations with empty states, responsive sidebar/UI and guarded idempotent development seed verified. All 161 tests, client/server/test TypeScript checks, both builds and Chromium flows pass. No verified hiring facts or new provider claims. |
 | 13 | Leaderboard and achievements | Complete | Real database-derived best-score assessment points, one-time difficulty-based coding/module points, six unique persisted badges, UTC meaningful current/longest streaks, Student global/active-batch rankings/private achievements/dashboard and authorized staff views implemented and locally verified. Historical learning dates remain unknown rather than fabricated. See IMPLEMENTATION.md for bounds and evidence. |
 | 14 | Trainer/Admin management | Complete | Real staff dashboards, Admin batches/trainer/membership/archive controls, scoped Student profiles, assessment/question authoring and validated atomic CSV import, authorized batch content assignments/completion, filtered reports/CSV exports and Admin Trainer workloads implemented and locally verified. Existing secure provisioning retained; no public privileged registration. See IMPLEMENTATION.md for verification and prototype limits. |
-| 15 | Responsive usable UI | In progress | Responsive authentication, dashboard, resume/analyzer/interview/feedback/assessment/analytics screens verified at desktop/tablet/mobile; future checkpoint screens remain. |
+| 15 | Responsive usable UI | Complete | UI-only polish: keyboard-managed mobile drawer, route focus/titles, labels/errors/loading, readable contrast, table scrolling and code editor fallback. 248 tests, all source/test TypeScript and both builds passed. Chromium verified 55 route views at 320/375/768/1024/1440px; no remaining audit findings after fixes. Device/manual screen-reader and live provider limits remain documented. |
 
 ## Sequential verification
 
@@ -91,3 +91,23 @@ Chromium final continuation checks passed Admin/Trainer assessment authoring, CS
 Backend phase passed 234 tests, source/test TypeScript and both production builds. Final coverage passes **243 tests** (222 server, 21 client), all client/server source/test TypeScript checks and both builds. Original Checkpoints 1–12/14 and watcher regressions remain passing. New tests cover point deduplication/retakes/difficulty, full-module recognition and actual timestamp safety, badges/concurrency, UTC boundaries/gaps, ties/pagination/current rank, ownership/batch/role isolation, privacy and over-limit errors, plus loading/empty/locked/earned UI states.
 
 Chromium verified actual graded assessment and saved full-module progress producing 140 points, two badges and a one-day UTC streak; refresh persistence, global/active-batch/profile/dashboard, Trainer denials/scoped achievements, Admin statistics, 375/768/1440px screens and mobile navigation with no runtime errors or page overflow. Disposable MongoDB and random test credentials only; no production/Atlas/provider used. Historical module completion dates are never reconstructed from visits or lesson timestamps. Existing visit-inclusive activity remains separate from meaningful streaks. No dependency, paid service, environment variable or seed added; no credentials/generated files staged; no commit/push. Checkpoint 15 remains unchanged/reserved.
+
+
+## Checkpoint 15 verification
+
+UI-only changes preserve Checkpoints 1–14, all backend routes/models and business
+rules. **248 tests passed** (222 server, 26 client), all source/test TypeScript
+checks and both production builds passed. Five new accessibility regressions were
+added; none of the original 243 tests were disabled or weakened.
+
+Chromium covered **55 route views × five widths = 275 layout checks** at
+320/375/768/1024/1440px. Axe WCAG 2 A/AA and 2.1 AA checks at phone/desktop widths,
+with all-width follow-ups for saved transcripts and coding challenges, found no
+remaining violations after the fixes. No document overflow or unexpected runtime
+errors remained. Findings and corrected initial fixture/asset errors are recorded
+in UI_AUDIT.md. Actual auth, resume/PDF/ATS, assessment, code drafts, learning,
+company checklist, badges, staff authoring/import/assignment/report/export and
+workload flows were exercised in disposable MongoDB only. Deliberate network and
+editor-import failures recovered correctly; no successful provider output was
+simulated. Manual screen readers/other engines/hardware and live OpenAI/Judge0
+remain unverified. No secrets/dependencies/generated outputs staged; no commit/push.

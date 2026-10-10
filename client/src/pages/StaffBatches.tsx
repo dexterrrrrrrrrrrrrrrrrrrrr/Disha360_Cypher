@@ -67,6 +67,7 @@ function BatchFields({
         <textarea
           className="input mt-2"
           maxLength={2000}
+          aria-label="Description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />

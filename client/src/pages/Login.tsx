@@ -25,13 +25,13 @@ export function Login() {
   }
   return <AuthLayout>
     <div className="mb-7 flex items-center gap-2 text-xs font-medium text-brand"><LockKeyhole size={18}/>Your secure placement workspace</div>
-    <h2 className="text-3xl font-bold tracking-tight text-ink">Welcome back</h2>
+    <h1 className="text-3xl font-bold tracking-tight text-ink">Welcome back</h1>
     <p className="mb-8 mt-3 text-sm leading-6 text-slate-500">Sign in to Disha360 and continue your journey.</p>
     {(location.state?.loggedOut || auth.notice === 'loggedOut') && <p role="status" className="mb-5 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700">You’ve been signed out successfully.</p>}
     {(error || auth.error) && <p role="alert" className="mb-5 rounded-lg border border-red-100 bg-red-50 p-3 text-sm text-red-700">{error || auth.error}</p>}
     <form onSubmit={submit} aria-busy={busy}><fieldset disabled={busy || auth.loading} className="space-y-5">
       <div><label htmlFor="email" className="field-label">Email address</label><div className="relative"><Mail size={17} className="absolute left-3.5 top-3.5 text-slate-400"/><input id="email" name="email" type="email" autoComplete="email" required maxLength={254} placeholder="you@college.edu" className="input pl-11"/></div></div>
-      <div><label htmlFor="password" className="field-label">Password</label><div className="relative"><LockKeyhole size={17} className="absolute left-3.5 top-3.5 text-slate-400"/><input id="password" name="password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" required maxLength={128} placeholder="Enter your password" className="input px-11"/><button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3.5 text-slate-400" aria-label={showPassword ? 'Hide password' : 'Show password'}>{showPassword ? <EyeOff size={17}/> : <Eye size={17}/>}</button></div></div>
+      <div><label htmlFor="password" className="field-label">Password</label><div className="relative"><LockKeyhole size={17} className="absolute left-3.5 top-3.5 text-slate-400"/><input id="password" name="password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" required maxLength={128} placeholder="Enter your password" className="input px-11"/><button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-0 top-0 flex h-full w-11 items-center justify-center rounded-lg text-slate-600" aria-label={showPassword ? 'Hide password' : 'Show password'}>{showPassword ? <EyeOff size={17}/> : <Eye size={17}/>}</button></div></div>
       <button type="submit" className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60">{busy || auth.loading ? <><LoaderCircle size={17} className="animate-spin"/>{busy ? 'Signing in…' : 'Checking session…'}</> : <>Sign in <ArrowRight size={16}/></>}</button>
     </fieldset></form>
     <p className="mt-6 text-center text-sm text-slate-500">New student? <Link to="/register" className="font-semibold text-brand hover:underline">Create an account</Link></p>

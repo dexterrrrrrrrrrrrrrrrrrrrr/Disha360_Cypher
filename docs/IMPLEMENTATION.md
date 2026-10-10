@@ -582,3 +582,117 @@ server/src/models/BadgeAward.ts
 server/src/services/engagement.ts
 server/test/engagement.test.ts
 ```
+
+
+## Checkpoint 15 — responsive UI, accessibility and final polish
+
+Base `8a2b728e5763218f91e29053fc5d2aa8e27e09cf`. This stage changes frontend
+presentation, accessibility and recovery only. No backend routes/models, scoring,
+provider execution, role checks, session logic, points/badges/streaks or seeds are
+changed. No application dependencies or environment variables are added.
+
+### Implementation
+
+- Shared CSS preserves purple/indigo branding while correcting confirmed contrast
+  failures, intrinsic grid widths, mobile input sizing and touch targets. Tables
+  retain internal horizontal scrolling rather than clipping the whole page.
+- The mobile drawer is an explicitly named dialog with inert background/closed
+  navigation, Tab/Shift+Tab containment, Escape, opener focus restoration, body
+  scroll locking and clean desktop-breakpoint behavior. All sidebar destinations
+  remain role-specific; the home logo goes straight to the role dashboard.
+- `RouteAccessibility` makes main content focusable, updates page titles and polite
+  route announcements, handles asynchronous protected-route mounting/direct links,
+  and makes table scroll regions named and keyboard reachable with column scopes.
+- Focus styles now cover textareas and details summaries. Loading skeletons
+  announce progress while hiding decorative blocks. Existing inline success
+  statuses and error/retry alerts are reused. Reduced motion stays supported.
+- Authentication forms come first on mobile, have proper page headings and usable
+  password visibility targets. Registration associates all field errors, announces
+  them and focuses the first invalid field; its existing account/role behavior is
+  unchanged. Saved textarea content no longer contaminates affected control names.
+- Resume section Add actions are individually named. Learning navigation announces
+  the current lesson. Saved interview speaker captions meet text contrast.
+- Monaco uses its built-in high-contrast light theme and screen-reader mode. Keyboard
+  help and a plain editor use exactly the same source/language/draft save APIs.
+  A failed editor bundle falls back to real editable/savable text; it never fabricates
+  execution. Draft changes warn before tab reload/closure. The existing provider
+  setup-required state still disables only Run/Submit. A local SVG favicon avoids
+  missing-asset console errors.
+
+### Verification and local reproduction
+
+`npm test`, `npm run typecheck`, `npm run build`: **248 tests passed** (222 server,
+26 client; original 243 plus five accessibility regressions). All client/server
+source/test TypeScript checks and both builds passed. No tests were disabled.
+The lazy Monaco bundle-size advisory remains; compilation succeeds.
+
+Chromium used actual authenticated UI and API requests into disposable MongoDB,
+not production/Atlas. Random temporary credentials stayed outside Git. Actual
+staff authoring/CSV import/publication/batch assignments, learning completion,
+assessment grading, resume saves/templates/PDF download and ATS analysis were
+verified. Four-language drafts save/restore with missing Judge0, company checklist
+refresh persistence, achievements, reports/CSV downloads, Trainer workload controls,
+Admin batch/trainer assignment and manual question create/edit were exercised.
+Student access to staff routes redirects; unrelated Trainer batches/Students and
+unauthorized exports remain denied. Deliberately aborted network/import requests
+verify real error recovery/fallback; no successful API response is mocked.
+
+Keyboard checks cover drawer focus containment/restoration, Escape, main focus,
+registration mismatch focus/error description, reduced motion and resizing an open
+drawer to desktop. Native confirmations retain browser-managed dialog focus. See
+[UI_AUDIT.md](UI_AUDIT.md) for findings, route inventory, matrix results and the exact
+local walkthrough. Run the existing app with a private development database and
+explicit account/resource provisioning; no new service configuration is needed.
+
+### Limitations
+
+Axe WCAG checks plus Chromium keyboard/layout checks are not a formal accessibility
+certification or manual NVDA/VoiceOver audit. Other browser engines, real touch
+hardware and microphone permissions require separate device testing. Live OpenAI
+interview/feedback and Judge0 execution remain unverified; only truthful missing-
+configuration states were tested. The stored transcript used in browser checks is
+explicitly a manual test fixture; no evaluation report or AI score was invented.
+Secure PDF resource uploads remain unavailable. No paid service, production write,
+credential, dependency or generated output is introduced or staged. Commit and push require explicit review approval.
+
+
+Final Checkpoint 15 matrix: **55 role-specific route views × five widths = 275
+layout checks** at 320/375/768/1024/1440px. No document overflow, remaining axe WCAG
+violations or unexpected page/console errors after targeted corrected-finding
+reruns. Multiline/folded code uses explicit readable line-number theme colors, not
+only Monaco's default high-contrast palette. Actual module, assessment and code
+records preserve their original server-side permissions. No source/history/test
+content is fabricated for presentation. The active assessment was checked at each
+width before actual submission. Full details and limitations: `UI_AUDIT.md`.
+
+Checkpoint 15 file inventory:
+
+```text
+README.md
+client/index.html
+client/public/favicon.svg
+client/src/components/EditorBoundary.tsx
+client/src/components/EngagementSummary.tsx
+client/src/components/RouteAccessibility.tsx
+client/src/components/StudentUI.tsx
+client/src/features/coding/Editor.tsx
+client/src/hooks/useNavigationDrawer.ts
+client/src/layouts/AppLayout.tsx
+client/src/layouts/AuthLayout.tsx
+client/src/main.tsx
+client/src/pages/CodingWorkspace.tsx
+client/src/pages/InterviewChat.tsx
+client/src/pages/Learning.tsx
+client/src/pages/LearningManage.tsx
+client/src/pages/Login.tsx
+client/src/pages/Register.tsx
+client/src/pages/ResumeEditor.tsx
+client/src/pages/StaffAssessments.tsx
+client/src/pages/StaffBatches.tsx
+client/src/pages/StudentDashboard.tsx
+client/src/styles.css
+client/test/uiAccessibility.test.tsx
+docs/CHECKPOINTS.md
+docs/IMPLEMENTATION.md
+docs/UI_AUDIT.md
+```

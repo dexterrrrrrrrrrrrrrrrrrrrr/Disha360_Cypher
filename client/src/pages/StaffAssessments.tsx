@@ -219,6 +219,7 @@ function QuestionForm({
             required
             minLength={5}
             maxLength={3000}
+            aria-label="Question prompt"
             value={q.prompt}
             onChange={(e) => setQ({ ...q, prompt: e.target.value })}
           />
@@ -300,6 +301,7 @@ function QuestionForm({
             className="input mt-2"
             required
             maxLength={3000}
+            aria-label="Answer explanation"
             value={q.explanation}
             onChange={(e) => setQ({ ...q, explanation: e.target.value })}
           />

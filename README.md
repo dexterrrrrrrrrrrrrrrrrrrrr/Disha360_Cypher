@@ -136,7 +136,7 @@ curl -i http://localhost:4000/api/v1/auth/me # 401 when no cookie is supplied
 
 `client/src/features/auth` contains session state and protected routing; `layouts/AuthLayout.tsx` preserves the shared sign-in design. Backend modules separate models, validators, services, controllers, middleware, routes, and operator utilities. npm workspaces keep installation simple.
 
-Checkpoints 1–4, 7 and 8 are implemented; Checkpoints 5–6 await live provider verification. Coding workspace/judge (9–10) are implemented with live-provider verification pending. Checkpoint 12 company preparation is now implemented; Checkpoint 14 management and Checkpoint 13 engagement are implemented below; Checkpoint 15 remains reserved for final UI polish. Your locally verified Atlas connection was not re-tested here because its credentials are not available in this cloud runtime. The auth flows were verified using an isolated actual MongoDB server. See [docs/CHECKPOINTS.md](docs/CHECKPOINTS.md) for status.
+Checkpoints 1–4, 7 and 8 are implemented; Checkpoints 5–6 await live provider verification. Coding workspace/judge (9–10) are implemented with live-provider verification pending. Checkpoint 12 company preparation is now implemented; Checkpoint 14 management and Checkpoint 13 engagement are implemented below; Checkpoint 15 responsive UI/accessibility polish is implemented below. Your locally verified Atlas connection was not re-tested here because its credentials are not available in this cloud runtime. The auth flows were verified using an isolated actual MongoDB server. See [docs/CHECKPOINTS.md](docs/CHECKPOINTS.md) for status.
 
 ## Student preparation features (Checkpoints 2–8)
 
@@ -526,3 +526,33 @@ Older complete learning progress can earn points after verification of current l
 No new environment variables, paid services, application dependencies or seed commands are required. Prototype limits: 500 Students per leaderboard, 25 rows/page, 500 active batches per selector, 20,000 grouped records per activity kind, and ten-second aggregation timeouts. Over-limit views fail explicitly rather than showing incomplete ranks; narrow to an active batch. Larger deployments need precomputed totals/incremental workers and query pagination. No caching lag is introduced here. Existing live OpenAI/Judge0 and PDF-upload limitations remain. Checkpoint 15 is reserved for final UI polish; this work implements only Checkpoint 13.
 
 Checkpoint 13 verification: **243 tests passed**, all client/server source/test TypeScript checks and both builds passed. Chromium verified actual saved points/badges/streaks, Student/staff access and 375/768/1440px layouts without page errors or overflow. No production data or live provider was used; the work remains uncommitted. Full endpoint/file/permission evidence is in [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md).
+
+
+## Responsive UI and accessibility — Checkpoint 15
+
+The existing Disha360 UI now has a keyboard-accessible mobile drawer, responsive
+forms/cards/table scroll regions, clearer text contrast, touch-friendly controls,
+visible focus, route titles/main-focus announcements, accessible loading/error
+states and improved registration validation feedback. Authentication forms come
+first on phones. Coding offers the existing Monaco syntax editor in high contrast
+and an accessible plain text editor; both save the same private drafts. Missing
+Judge0 still disables execution, never editing or saving. Failed editor loading
+falls back to actual text editing without pretending execution succeeded.
+
+Run `npm test`, `npm run typecheck`, `npm run build`, then `npm run dev` with your
+existing private development database. **248 automated tests pass**, including the
+original 243 regressions. No new environment variables or application dependencies
+are required. See [docs/UI_AUDIT.md](docs/UI_AUDIT.md) for confirmed findings, role
+page checklist, five-width browser checks and step-by-step keyboard/workflow tests;
+[docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md) explains implementation and limits.
+
+Chromium checks cover real Student and staff operations against disposable MongoDB.
+No production data is used. OpenAI/Judge0 live results, secure PDF resource uploads,
+Safari/Firefox/mobile hardware and manual screen-reader audits remain unverified.
+Automated accessibility checks do not constitute WCAG certification. The existing
+lazy Monaco build-size advisory remains. Commit and push require explicit review approval.
+
+Final browser matrix: **55 role-specific route views at 320, 375, 768, 1024 and
+1440px (275 layout checks)**. No remaining axe WCAG violations, document overflow
+or unexpected runtime/console errors after corrected findings and targeted reruns.
+The full route/finding checklist is in `docs/UI_AUDIT.md`.

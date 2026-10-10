@@ -19,6 +19,7 @@ import type { ReactNode } from "react";
 import { Brand } from "../components/Brand";
 import { roleLabels, type Role } from "../types";
 import { useAuth } from "../features/auth/AuthProvider";
+import { useNavigationDrawer } from "../hooks/useNavigationDrawer";
 
 export function AppLayout({
   role,
@@ -28,6 +29,7 @@ export function AppLayout({
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const { drawer, mobile } = useNavigationDrawer(open, () => setOpen(false));
   const navigate = useNavigate();
   const auth = useAuth();
   const location = useLocation();
@@ -101,14 +103,22 @@ export function AppLayout({
         <button
           className="fixed inset-0 z-30 bg-ink/40 lg:hidden"
           aria-label="Close navigation"
+          tabIndex={-1}
+          aria-hidden="true"
           onClick={() => setOpen(false)}
         />
       )}
       <aside
+        ref={drawer}
+        id="workspace-navigation"
+        inert={mobile && !open}
+        role={mobile && open ? "dialog" : undefined}
+        aria-modal={mobile && open ? true : undefined}
+        aria-label="Workspace navigation"
         className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-slate-200 bg-white transition-transform lg:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"}`}
       >
         <div className="flex h-24 items-center justify-between px-7">
-          <Link to="/login" aria-label="Disha360 home">
+          <Link to={`/dashboard/${role}`} aria-label="Disha360 home">
             <Brand />
           </Link>
           <button
@@ -193,18 +203,20 @@ export function AppLayout({
           </button>
         </div>
       </aside>
-      <div className="lg:pl-64">
+      <div className="min-w-0 lg:pl-64" inert={mobile && open}>
         <header className="flex min-h-20 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 sm:px-8">
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 items-center gap-3">
             <button
               className="icon-button lg:hidden"
               onClick={() => setOpen(true)}
               aria-label="Open navigation"
+              aria-expanded={open}
+              aria-controls="workspace-navigation"
             >
               <Menu size={22} />
             </button>
-            <span className="text-sm text-slate-500">
-              Workspace <span className="mx-2 text-slate-300">/</span>
+            <span className="min-w-0 text-sm text-slate-500">
+              <span className="hidden sm:inline">Workspace <span className="mx-2 text-slate-300">/</span></span>
               <span className="font-medium text-ink">
                 {location.pathname.startsWith("/leaderboard")
                   ? "Leaderboard"
@@ -235,8 +247,8 @@ export function AppLayout({
               </span>
             </span>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="max-w-44 text-right">
+          <div className="flex shrink-0 items-center gap-3">
+            <div className="max-w-24 text-right sm:max-w-44">
               <p className="truncate text-xs font-semibold text-ink">
                 {auth.user?.name}
               </p>
@@ -251,6 +263,7 @@ export function AppLayout({
         </header>
         <main
           id="main-content"
+          tabIndex={-1}
           className="mx-auto max-w-[1440px] p-4 sm:p-8 lg:p-9"
         >
           {children}
