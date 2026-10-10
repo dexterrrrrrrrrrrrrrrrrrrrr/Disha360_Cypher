@@ -1,9 +1,11 @@
 import { z } from 'zod';
 import { codeInput } from '../features/coding/validation.js';
-export const mentorActions = ['explain', 'error', 'hint', 'debug', 'optimize', 'time', 'space', 'approach'] as const;
+export const mentorActions = ['explain', 'error', 'hint', 'debug', 'optimize', 'time', 'space', 'approach', 'practice', 'algorithm'] as const;
 export const mentorRequest = codeInput.omit({ stdin: true }).extend({
   action: z.enum(mentorActions), hintLevel: z.number().int().min(1).max(3).default(1),
   allowSolution: z.boolean().default(false), problemId: z.string().regex(/^[a-f0-9]{24}$/).optional(),
+  conversation: z.array(z.object({ role: z.enum(['user', 'assistant']), text: z.string().max(2000) }).strict()).max(6).optional(),
+  prompt: z.string().max(1000).default(''),
   error: z.string().max(4000).default(''),
 }).strict();
 export const mentorContextSchema = mentorRequest.omit({ problemId: true }).extend({

@@ -41,3 +41,11 @@ it.each(['invalid-json', 'empty-question', 'refusal', 'incomplete'])('rejects %s
   const client = await endpoint(200, payload);
   await expect(new OpenAIInterviewProvider('unused', 'model', client).question(setup, [])).rejects.toMatchObject({ status: 503, code: 'AI_UNAVAILABLE' });
 });
+it('uses the existing official OpenAI client for bounded structured mentor guidance', async () => {
+  let request: Record<string, unknown> = {};
+  const client = await endpoint(200, response('{"explanation":"Check input parsing.","nextSteps":[]}'), body => { request = body; });
+  const provider = new OpenAIInterviewProvider('unused', 'explicit-model', client);
+  const { mentorContextSchema } = await import('../src/validators/codingMentor.js');
+  expect((await provider.codingMentor(mentorContextSchema.parse({ language: 'javascript', source: 'console.log(1)', action: 'explain', problem: null }))).explanation).toContain('parsing');
+  expect(request).toMatchObject({ model: 'explicit-model', store: false, max_output_tokens: 1800 }); expect(request.instructions).toContain('Never claim code was executed');
+});

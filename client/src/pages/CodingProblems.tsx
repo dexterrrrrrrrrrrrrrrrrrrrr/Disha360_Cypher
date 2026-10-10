@@ -161,7 +161,7 @@ export function CodingChallenge() {
       ) : (
         p && (
           <>
-            <section className="card mb-6 space-y-5 break-words">
+            <div className="grid items-start gap-6 xl:grid-cols-[minmax(280px,0.7fr)_minmax(0,1.3fr)]"><section className="card rounded-2xl border-violet-200 space-y-5 break-words xl:sticky xl:top-5"><span className="inline-block rounded-full bg-violet-50 px-3 py-1 text-xs font-semibold capitalize text-brand">{p.difficulty} · {p.topic}</span>
               <p className="text-xs text-slate-500">
                 Supported languages:{" "}
                 {p.supportedLanguages
@@ -220,9 +220,10 @@ export function CodingChallenge() {
                 Hidden diagnostics are withheld. Coding Demo Mode performs neither execution nor grading.
               </p>
             </section>
-            <Workspace
+            <div className="min-w-0"><Workspace
               key={id}
               problemId={id}
+              submissionSummary={result ? { verdict: result.verdict, passed: result.passed, total: result.total } : undefined}
               scope={`problem-${id}`}
               sample={p.examples[0]?.input || ""}
               onSubmit={submit}
@@ -252,6 +253,7 @@ export function CodingChallenge() {
                 </Link>
               </section>
             )}
+            </div></div>
           </>
         )
       )}

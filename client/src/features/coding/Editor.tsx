@@ -32,7 +32,8 @@ export default function CodeEditor({
   disabled: boolean;
 }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-200">
+    <div className="overflow-hidden rounded-2xl border border-violet-200 shadow-sm">
+      <div className="flex items-center justify-between border-b border-violet-100 bg-gradient-to-r from-violet-50 to-slate-50 px-4 py-3 text-xs"><span className="font-semibold text-brand">Disha360 editor</span><span className="text-slate-600">{language} · Monaco</span></div>
       <Editor
         height="420px"
         theme="disha-accessible"

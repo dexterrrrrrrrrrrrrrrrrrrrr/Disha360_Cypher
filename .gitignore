@@ -9,3 +9,6 @@ playwright-report/
 coverage/
 *.tsbuildinfo
 .DS_Store
+
+# Generated local runner authentication (never commit)
+.disha-local/

@@ -14,7 +14,8 @@
     "user:create": "tsx src/utils/provisionUser.ts",
     "seed:assessments": "tsx src/utils/seedAssessments.ts",
     "seed:coding": "tsx src/utils/seedCoding.ts",
-    "seed:companies": "tsx src/utils/seedCompanies.ts"
+    "seed:companies": "tsx src/utils/seedCompanies.ts",
+    "providers:check": "tsx src/utils/checkProviders.ts"
   },
   "dependencies": {
     "@google/genai": "2.28.0",

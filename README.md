@@ -844,3 +844,21 @@ responses are mocked; MongoDB tests use disposable instances. See
 `docs/IMPLEMENTATION.md` for endpoints, indexes and final verification evidence.
 
 Production deployment preparation and exact Render/Vercel settings are documented in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). Deployment requires separate approval.
+
+Run `npm run providers:check` for safe backend provider diagnostics. It verifies the configured Gemini model through read-only Google metadata when credentials exist, never generates content or executes code, and reports missing environment settings without printing secrets. OneCompiler credential validity and credit balance require separate account/live verification. Configure keys securely in environment settings; do not paste them into chat or overwrite your private `.env`.
+
+### Free local AI with Ollama
+
+No cloud API key is needed for local interviews, feedback or the AI Coding Mentor.
+Start Ollama, explicitly download a suitable model and select `AI_PROVIDER=ollama`,
+`OLLAMA_BASE_URL=http://127.0.0.1:11434`, and an exact installed `OLLAMA_MODEL` in
+backend environment settings (or terminal exports), then restart the server.
+See [macOS / VS Code setup and security limitations](docs/LOCAL_DEVELOPMENT.md).
+The mentor supports streaming Ollama chat, Markdown, copyable code, progressive
+hints and clearly labeled unverified guidance. Gemini/manual key selection and
+optional explicitly configured OpenAI remain available; no automatic fallback.
+
+Free local code execution is now available through an opt-in, separate Docker
+worker in development. See [Docker setup and real execution tests](docs/DOCKER_SANDBOX.md).
+Public production activation is rejected. Existing OneCompiler, gated Judge0 and labeled development Demo Mode
+are preserved. AI never judges test-case correctness. No private `.env` is changed.

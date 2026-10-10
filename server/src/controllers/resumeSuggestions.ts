@@ -10,7 +10,7 @@ export function resumeSuggestionController(provider?: InterviewProvider): Reques
     const input = resumeSuggestionRequest.parse(req.body); // Consent required for every request.
     const resume = await ownedResume(req.params.id, req.user!.id as string);
     if (!provider?.resumeSuggestions)
-      throw new AppError(503, 'AI_SETUP_REQUIRED', 'Qualitative resume suggestions require a configured Gemini provider. The ATS heuristic remains available.');
+      throw new AppError(503, 'AI_SETUP_REQUIRED', 'Qualitative resume suggestions require a configured AI provider. The ATS heuristic remains available.');
     const prepared = prepareResumeSuggestions(resumeContentSchema.parse(resume.content), input.jobDescription);
     const raw = await provider.resumeSuggestions(prepared);
     const result = resumeSuggestionsSchema.safeParse(raw);
