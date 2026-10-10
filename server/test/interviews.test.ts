@@ -14,7 +14,7 @@ beforeEach(async () => { await db.clear(); });
 afterAll(async () => { if (db) await db.close(); });
 it('shows setup-required without credentials and never creates a simulated interview', async () => {
   const s = await studentAccount(); const app = testApp();
-  const config = await studentCall(app, s.cookie, 'get', '/interviews/config'); expect(config.body.data.configured).toBe(false); expect(config.body.data.message).toContain('OPENAI_API_KEY');
+  const config = await studentCall(app, s.cookie, 'get', '/interviews/config'); expect(config.body.data.configured).toBe(false); expect(config.body.data.message).toContain('selected backend AI provider');
   const start = await studentCall(app, s.cookie, 'post', '/interviews', setup); expect(start.status).toBe(503); expect(start.body.error.code).toBe('AI_SETUP_REQUIRED'); expect(await InterviewSession.countDocuments()).toBe(0);
 });
 it('validates setup, answers, IDs and rejects owner/provider injection', async () => {

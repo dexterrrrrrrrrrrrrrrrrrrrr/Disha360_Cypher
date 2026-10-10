@@ -6,6 +6,11 @@ dotenv.config({ path: fileURLToPath(new URL('../../.env', import.meta.url)), qui
 
 export const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+  AI_PROVIDER: z.enum(['gemini', 'openai']).default('gemini'),
+  GEMINI_API_KEY: z.string().trim().optional(),
+  GEMINI_API_KEY_BACKUP: z.string().trim().optional(),
+  GEMINI_MODEL: z.string().trim().max(100).default(''),
+  GEMINI_KEY_SELECTION: z.enum(['primary', 'backup']).default('primary'),
   CODING_DEMO_MODE: z.enum(['true', 'false']).default('false').transform(v => v === 'true'),
   PORT: z.coerce.number().int().min(1).max(65535).default(4000),
   CLIENT_ORIGIN: z.string().url().default('http://localhost:5173'),

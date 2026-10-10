@@ -19,7 +19,7 @@ import {
 import { Resume } from "./models/Resume.js";
 import { ResumeAnalysis } from "./models/ResumeAnalysis.js";
 import { InterviewSession } from "./models/InterviewSession.js";
-import { OpenAIInterviewProvider } from "./services/interviewProvider.js";
+import { configureAI } from "./services/aiProvider.js";
 import { InterviewFeedback } from "./models/InterviewFeedback.js";
 import { Question, Assessment, TestAttempt } from "./models/Assessment.js";
 import { sweepExpiredAttempts } from "./services/assessments.js";
@@ -72,6 +72,7 @@ if (env.MONGODB_URI) {
     "MONGODB_URI is not configured. Authentication and persistence are unavailable; health endpoints remain available.",
   );
 
+const ai = configureAI(env);
 const app = createApp({
   codingDemoMode: env.CODING_DEMO_MODE,
   executionProvider:
@@ -83,9 +84,8 @@ const app = createApp({
   secureCookies: env.NODE_ENV === "production",
   trustProxy: env.TRUST_PROXY,
   allowDemoAccounts: env.NODE_ENV === "development",
-  interviewProvider: env.OPENAI_API_KEY
-    ? new OpenAIInterviewProvider(env.OPENAI_API_KEY, env.OPENAI_MODEL)
-    : undefined,
+  interviewProvider: ai.provider,
+  aiSetupMessage: ai.setupMessage,
 });
 const server = app.listen(env.PORT, "0.0.0.0", () =>
   console.log(`Disha360 API listening on port ${env.PORT}`),

@@ -1,6 +1,6 @@
 # Disha360 Placement Training LMS
 
-A placement training LMS built with React, Vite, TypeScript, Tailwind, Express, and MongoDB. **Checkpoints 1–4, 7–8 and text/link learning (11) are implemented and locally verified.** Checkpoints 5–6 have a real OpenAI integration and tested workflows; live AI verification requires backend credentials. The student dashboard reads actual MongoDB records and shows empty states when performance evidence is absent. The existing design system and project structure are preserved.
+A placement training LMS built with React, Vite, TypeScript, Tailwind, Express, and MongoDB. The completed placement-training workflows are preserved. AI interviews support a centralized Google Gemini integration and the optional existing OpenAI provider; live AI verification still requires a properly configured backend. The student dashboard reads actual MongoDB records and shows empty states when performance evidence is absent. The existing design system and project structure are preserved.
 
 ## Install and run
 
@@ -192,20 +192,114 @@ Checkpoints 1–4, 7 and 8 are implemented; Checkpoints 5–6 await live provide
 - **Dashboard `/dashboard/student`:** personal details, learning completion, recorded assessment average, upcoming assignments, UTC daily streak, persisted recent activity, and next actions derived from the student's resume/interview records. Readiness is an explicit estimate: 25% profile completeness + 40% recorded lesson completion + 35% recorded assessment average. Missing performance records contribute no points; their displayed metrics are blank. A new student with a complete profile has a 25% estimate, not an invented test score. Dashboard visits count as daily check-ins. Students cannot set scores: the assessment engine calculates them from saved answers. Published text/link learning and saved completion are now available.
 - **Resume studio `/resumes`:** private structured drafts, personal details, education, skills, projects, experience, certifications; Classic, Modern, and Compact templates; live preview; explicit save; server-generated PDF. Reload preserves saved content. Save before exporting; the PDF uses the saved version. Concurrent edits are rejected with 409 instead of overwriting a newer version. Resume lists show the latest 100 drafts.
 - **ATS analyzer `/resume-analyzer`:** select a saved resume and enter a 50–12,000-character job description. Deterministic keyword extraction, matched/missing keywords, five completeness checks, evidence checks, component breakdown and suggestions. Scores are reproducible, never random. No AI credentials are needed for this heuristic. History retains private immutable content snapshots and the rubric/version used, including after the original resume is deleted. Latest 100 results are listed.
-- **Interviews `/interviews`:** Technical, Behavioral or HR; Beginner, Intermediate or Advanced; target role, optional focus, 3–10 questions; AI-generated first questions and adaptive follow-ups; private saved transcripts, history, resumable active sessions, automatic completion or early end. The server forwards actual prior questions and answers to OpenAI. Concurrent processing uses a bounded MongoDB lease and version checks. Failed question generation leaves the transcript/version unchanged and permits retry. Text answers remain in the input after a failed request. Completed sessions can now generate saved evidence-linked feedback reports; see Checkpoint 6 below.
+- **Interviews `/interviews`:** Technical, Behavioral or HR; Beginner, Intermediate or Advanced; target role, optional focus, 3–10 questions; AI-generated first questions and adaptive follow-ups; private saved transcripts, history, resumable active sessions, automatic completion or early end. The server forwards actual prior questions and answers to the selected backend AI provider. Concurrent processing uses a bounded MongoDB lease and version checks. Failed question generation leaves the transcript/version unchanged and permits retry. Text answers remain in the input after a failed request. Completed sessions can now generate saved evidence-linked feedback reports; see Checkpoint 6 below.
 
 All feature routes are protected for Students on both client and server. Ownership always comes from the authenticated session, never a submitted student ID. Cross-student record access returns 404. Private responses use `Cache-Control: no-store`; mutations require the existing CSRF header/origin checks. Inputs use Zod, records are persisted in MongoDB, and MongoDB unavailability returns a safe 503. No credentials or session tokens enter React code.
 
-### AI configuration (Checkpoints 5–6)
+### Gemini AI configuration (₹0 budget)
 
-In your existing **private `server/.env`**, add:
+The backend uses the official maintained `@google/genai` Node.js SDK, pinned to
+2.28.0. All Gemini calls go through one `GeminiAIService`; React never receives
+keys or chooses credentials. Existing Technical, Behavioral and HR interviews,
+adaptive follow-ups, actual-answer evaluation, feedback and private history use
+the same workflows and database structures. Feedback retains evidence-checked
+quotes, AI-estimate scores and the existing rubric, not hiring predictions.
+
+**Current Free Tier eligibility is unverified in this workspace.** On 10 October
+2026, the official SDK source and npm metadata were accessible, but Google's
+pricing, rate-limit and library pages returned network-policy HTTP 403. No live
+model is selected automatically: `GEMINI_MODEL` deliberately defaults to blank,
+and AI stays unavailable until an operator sets it. Do not copy a stale model
+name or use a `latest` alias without checking its current terms.
+
+For a strict ₹0 deployment, review the [official pricing table](https://ai.google.dev/gemini-api/docs/pricing),
+[rate limits](https://ai.google.dev/gemini-api/docs/rate-limits),
+[API terms](https://ai.google.dev/gemini-api/terms) and
+[API-key instructions](https://ai.google.dev/gemini-api/docs/api-key).
+Choose a currently Free Tier-eligible text model with structured JSON support,
+and keep billing disabled on its Google project. This application cannot inspect
+Google billing status or guarantee zero cost on a billed project. No billing,
+paid resources, paid tools, grounding, automatic upgrades or fallback APIs are
+enabled by this integration. Two keys do not double the free allowance: quotas
+may be shared at project level. Never rotate keys to bypass limits.
+
+Local setup:
+
+1. Run `npm ci --cache /tmp/cypher-npm-cache` in the repository root.
+2. Keep the existing private `server/.env` and a dedicated development MongoDB
+   connection. Do not overwrite that file or put credentials in chat/Git.
+3. Independently verify model eligibility and your project's disabled billing.
+   Obtain permitted Gemini Developer API credentials through Google AI Studio;
+   keep both credentials server-side. This work does not create an account or key.
+4. Add the following backend settings privately (the blank example contains no
+   secrets). Set the model to the exact ID you just verified.
 
 ```dotenv
-OPENAI_API_KEY=<your-private-openai-api-key>
-OPENAI_MODEL=gpt-4.1-mini
+AI_PROVIDER=gemini
+GEMINI_API_KEY=
+GEMINI_API_KEY_BACKUP=
+GEMINI_MODEL=
+GEMINI_KEY_SELECTION=primary
 ```
 
-Create a project API key in the [OpenAI API platform](https://platform.openai.com/api-keys), configure API billing and model access, then restart `npm run dev`. Keep this key on the backend; never use a `VITE_` variable or paste credentials into chat. The SDK uses the Responses API, structured JSON output, a 60-second timeout, no automatic retries, and `store: false`. The model can be changed to one that supports Responses and structured output. Calls can incur provider charges. No key means a visible **AI setup required** state and a 503 `AI_SETUP_REQUIRED` for starting an interview; it never substitutes canned AI answers. Configuration presence does not prove valid credentials/billing; upstream failures show safe errors.
+5. Fill the selected credential and model locally, then restart `npm run dev`.
+   With `primary`, only `GEMINI_API_KEY` is used. The backup can remain unavailable
+   until you need manual rotation; both settings are supported.
+6. Sign in as Student. In Mock interviews, select type, difficulty, target role
+   and focus. Start, answer, review a follow-up, end the session and review feedback.
+   Verify history reload and another Student's inability to open the same record.
+7. To use qualitative resume suggestions, select your saved resume and job
+   description in ATS analysis, read the privacy disclosure, check consent and
+   click **Get optional AI suggestions**. The ATS calculation remains unchanged.
+
+Manual rotation: change `GEMINI_KEY_SELECTION=backup` in backend configuration,
+then restart the server. Only `GEMINI_API_KEY_BACKUP` will be used. To revert,
+select `primary` and restart. Missing, invalid or revoked selected credentials
+produce a safe error; the other key is never selected automatically. Students,
+Trainers and Admins have no key inputs or switching controls. Keys are not stored
+in MongoDB. Changing the selected model/provider also requires a restart.
+
+Limits: 45-second deadlines, 85,000-byte JSON input, 100,000-byte output checks,
+600 question / 6,000 feedback / 1,800 suggestion output-token caps, ten Gemini
+requests per minute and two concurrent calls per backend instance. Existing
+HTTP/body/role/CSRF/origin limits remain, including the twenty-per-minute AI route
+limit. Failed requests count toward local limits. These local safeguards are not
+Google's project quota or a monetary spending cap. There are no automatic retries,
+key switches, model switches or provider switches. Quota, rate and network failures
+show: “The AI service is temporarily unavailable or its free usage limit has been
+reached. Please try again later.” No failed call produces a fake question, report
+or score. Saved transcripts survive provider outages; failed answers are not
+silently added to the saved conversation.
+
+Privacy: interviews send the actual setup and saved text conversation to the
+selected provider. Avoid sensitive/personal details and review its current
+retention/data-use terms, including Free Tier terms. Resume suggestions require
+explicit consent on every POST and are owned-Student-only. They omit contact
+fields, names, locations, links, institution/employer names, dates and record IDs;
+known contact values, email addresses, URLs and phone-like strings are also
+redacted from selected text. Free-form content can still identify you. Only the
+first five project/experience descriptions (1,500 characters each), forty skills,
+three degree/field entries, a 2,000-character summary and the job description are
+sent. This is best-effort minimization, not guaranteed anonymization. Suggestions
+are temporary, contain no numeric ATS score and never edit the resume. Review
+claims and manually apply only approved, accurate changes in the builder.
+
+The existing OpenAI Responses integration is preserved as an explicit alternative:
+set `AI_PROVIDER=openai`, `OPENAI_API_KEY` and a compatible `OPENAI_MODEL`, then
+restart. Its existing 60-second timeout, no-retry policy, structured responses and
+`store: false` remain. **OpenAI is not a ₹0 fallback**; do not select it under this
+budget without independently confirmed cost-free access. Qualitative resume
+suggestions are Gemini-only; the deterministic ATS analyzer works with either
+provider or no provider. No automatic cross-provider fallback exists.
+
+Troubleshooting: missing selected key/model shows setup-required; invalid/revoked
+keys or unsupported models show a sanitized configuration error. Verify local
+settings and current model access without enabling billing. For rate/quota errors,
+wait for the allowed reset; do not switch keys to bypass quota. Network/timeouts
+and blocked, incomplete or invalid JSON responses save no fake results. The
+backend needs HTTPS access to `generativelanguage.googleapis.com`. Live keys and
+Google availability were not tested here; tests use mocked responses and a local
+SDK HTTP endpoint. Run `npm test`, `npm run typecheck`, `npm run build`.
 
 Optional voice uses browser SpeechRecognition/webkitSpeechRecognition (English `en-IN`) and speechSynthesis. It is activated only by the student's buttons. Microphone permission, browser/OS support, a secure context (or localhost), and sometimes the browser's network service are required. If recognition is unavailable or fails, text chat remains fully usable. The browser provides dictation independently of the backend AI provider.
 
@@ -224,7 +318,7 @@ npm run dev
 1. Open `http://localhost:5173`, register or log in as a Student, and open Overview. With no learning or assessment records, expect honest empty states. Reload: the daily visit is recorded only once per UTC day. Existing learning/assignment records appear only for their owner.
 2. Open Resume studio → Create resume. Fill every relevant section, add/remove entries, choose each template, and inspect the live preview. Save, reload, edit and save again. Export a PDF; verify all populated sections. Unfinished drafts are allowed. Export is disabled until changes are saved. Open the same resume in two tabs; a stale save should report a conflict. Unsaved edits are not autosaved; save before navigating away.
 3. Open ATS analyzer. Select your saved resume, paste a real job description, and analyze. Inspect the score components, missing terms, section checks and suggestions. Reload and open a history entry. Repeat with identical saved content and description: the score must match. Edit the resume: previous history retains the original version and result.
-4. Without `OPENAI_API_KEY`, open Mock interviews: expect AI setup required and disabled Start. With a private valid key and API billing, restart the backend, choose a type/difficulty/role and Start. Wait for the generated question, send an answer containing concrete detail, and check that the next question follows the conversation. Reload and continue from history. Finish at the question limit or End session; review the saved transcript. A second Student must not be able to open this session or your resume/analysis by URL.
+4. Without a configured selected provider, open Mock interviews: expect AI setup required and disabled Start. After completing the Gemini Free Tier checks and private setup above, restart the backend, choose a type/difficulty/role and Start. Wait for the generated question, send an answer containing concrete detail, and check that the next question follows the conversation. Reload and continue from history. Finish at the question limit or End session; review the saved transcript. A second Student must not be able to open this session or your resume/analysis by URL.
 5. In a supported browser, try Dictate answer and Read question; grant microphone permission as desired. Review dictated text before sending. Test denied permission/unsupported recognition and continue by typing. Check mobile/tablet navigation and desktop layouts. No real microphone/provider speech service is assumed by automated tests.
 6. Trainer and Admin login still open their own existing workspaces. Their accounts cannot call student-feature endpoints. Authentication, logout and cookie behavior remain unchanged.
 
@@ -258,7 +352,7 @@ npm run dev
 3. Start another attempt and let its displayed timer expire (samples are five minutes). Saved answers are automatically finalized, further editing is disabled, and closing/reopening the tab does not extend time. Repeated result visits do not duplicate completion activities. Each sample permits three attempts.
 4. Open Insights: compare metrics/history against your actual results. After only one attempt, topic interpretations are insufficient evidence. More questions alone do not bypass the distinct-attempt/unique-question thresholds. Check Overview's assessment average, unchanged readiness formula, recent activity and recommended actions.
 5. Batch comparison remains unavailable until an operator supplies **real** Batch/Enrollment data and at least three other members complete the same assessment version and exact question set. Use the Checkpoint 14 Admin batch UI described below to manage real memberships. No other student's individual performance is exposed.
-6. For feedback, privately configure `OPENAI_API_KEY` and an accessible `OPENAI_MODEL` in **server/.env**, with billing/model access; restart development. Start an interview, answer with concrete evidence, complete it and wait for the report. Inspect quoted evidence and AI-estimate labeling; reload and reopen from history. Unsupported technical competencies may be unassessed. Without a key, the application explicitly shows AI/feedback unavailable.
+6. For feedback, privately configure the selected backend AI provider using the Gemini setup above, then restart development. Start an interview, answer with concrete evidence, complete it and wait for the report. Inspect quoted evidence and AI-estimate labeling; reload and reopen from history. Unsupported technical competencies may be unassessed. Without a key, the application explicitly shows AI/feedback unavailable.
 7. Sign out and verify private routes require login. Sign in as another Student and try the first student's attempt/interview URL: access must fail. Trainer/Admin accounts cannot access student APIs. Verify mobile/tablet navigation, assessments, insights and reports.
 8. Verify backend health/readiness at `http://localhost:4000/api/v1/health` and `/api/v1/ready`. Tests use disposable MongoDB, not Atlas. For exact API bodies, scoring/analytics formulas and limitations, see [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md).
 

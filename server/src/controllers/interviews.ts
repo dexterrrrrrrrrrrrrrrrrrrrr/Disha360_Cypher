@@ -6,11 +6,11 @@ import { objectIdSchema } from '../validators/resume.js';
 import { AppError } from '../utils/AppError.js';
 import { recordActivity } from '../services/dashboard.js';
 import type { InterviewProvider } from '../services/interviewProvider.js';
-function configured(provider?: InterviewProvider) { if (!provider) throw new AppError(503, 'AI_SETUP_REQUIRED', 'AI interviews require an OpenAI API key configured on the backend. No demo interview responses are generated.'); return provider; }
+function configured(provider?: InterviewProvider) { if (!provider) throw new AppError(503, 'AI_SETUP_REQUIRED', 'AI interviews require a configured backend AI provider. No simulated responses are generated.'); return provider; }
 async function owned(id: unknown, studentId: string) { const s = await InterviewSession.findOne({ _id: objectIdSchema.parse(id), studentId }); if (!s) throw new AppError(404, 'NOT_FOUND', 'Interview session not found.'); return s; }
 const available = () => ({ $or: [{ leaseUntil: null }, { leaseUntil: { $lt: new Date() } }] });
-export function interviewControllers(provider?: InterviewProvider) {
-  const config: RequestHandler = (_req, res) => res.json({ success: true, data: { configured: !!provider, provider: provider?.name || null, message: provider ? 'Backend AI integration is configured. Availability depends on provider credentials, billing, and model access.' : 'Setup required: set OPENAI_API_KEY in server/.env and restart the backend. There is no simulated AI interview mode.' } });
+export function interviewControllers(provider?: InterviewProvider, setupMessage?: string) {
+  const config: RequestHandler = (_req, res) => res.json({ success: true, data: { configured: !!provider, provider: provider?.name || null, resumeSuggestionsAvailable: !!provider?.resumeSuggestions, message: provider ? 'Backend AI integration is configured. Live availability depends on the selected credential, model access and quota; configuration alone does not verify availability. No automatic provider or credential fallback is used.' : (setupMessage || 'Setup required: configure the selected backend AI provider and restart it. There is no simulated AI interview mode.') } });
   const start: RequestHandler = async (req, res) => {
     const setup = interviewSetupSchema.parse(req.body); const ai = configured(provider);
     const question = await ai.question(setup, []);

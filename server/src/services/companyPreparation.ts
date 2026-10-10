@@ -118,7 +118,7 @@ export async function companyResources(
       href: "/interviews",
       title: "Mock interview workspace",
       detail:
-        "Use these topics to prepare. Live interviews require configured OpenAI access; these profiles do not create company-specific AI interviews.",
+        "Use these topics to prepare. Live interviews require a configured AI provider; these profiles do not create company-specific AI interviews.",
     },
     explanation:
       "Resources match curated topics or assessment categories. They are general preparation materials, not company-endorsed tests. Availability is checked when this page loads.",

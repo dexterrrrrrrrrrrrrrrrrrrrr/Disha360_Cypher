@@ -35,6 +35,7 @@ import {
   listAnalyses,
   getAnalysis,
 } from "../controllers/analyses.js";
+import { resumeSuggestionController } from "../controllers/resumeSuggestions.js";
 import { interviewControllers } from "../controllers/interviews.js";
 import type { InterviewProvider } from "../services/interviewProvider.js";
 import { rateLimit } from "express-rate-limit";
@@ -57,6 +58,7 @@ export function studentRoutes(
   execution?: ExecutionProvider,
   executionRateLimit = 10,
   codingDemoMode = false,
+  aiSetupMessage?: string,
 ) {
   const router = Router();
   router.use((_req, res, next) => {
@@ -98,7 +100,7 @@ export function studentRoutes(
   router.get("/resumes/:id", getResume);
   router.put("/resumes/:id", updateResume);
   router.delete("/resumes/:id", deleteResume);
-  const interviews = interviewControllers(provider);
+  const interviews = interviewControllers(provider, aiSetupMessage);
   const aiLimit = rateLimit({
     windowMs: 60000,
     limit: 20,
@@ -112,6 +114,7 @@ export function studentRoutes(
       },
     },
   });
+  router.post("/resumes/:id/ai-suggestions", aiLimit, resumeSuggestionController(provider));
   router.get("/interviews/config", interviews.config);
   router.get("/interviews", interviews.list);
   router.post("/interviews", aiLimit, interviews.start);
