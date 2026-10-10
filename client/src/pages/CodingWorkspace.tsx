@@ -17,6 +17,7 @@ export interface Execution {
   timeSeconds: number | null;
   memoryKb: number | null;
   outputTruncated: boolean;
+  exitCode?: number | null;
 }
 interface DemoRun {
   illustrativeOutput: string;
@@ -48,10 +49,12 @@ export function Workspace({
   sample = "",
   onSubmit,
   problemId,
+  submissionSummary,
 }: {
   scope: string;
   sample?: string;
   problemId?: string;
+  submissionSummary?: { verdict: string | null; passed: number; total: number };
   onSubmit?: (language: Language, source: string) => Promise<void>;
 }) {
   const config = useStudentData<{
@@ -334,7 +337,7 @@ export function Workspace({
                   : execution.verdict}
               </p>
               <p className="text-xs text-slate-500">
-                Runtime: {execution.timeSeconds ?? "Unavailable"} s · Memory:{" "}
+                Exit status: {execution.exitCode ?? "Unavailable"} · Wall runtime: {execution.timeSeconds ?? "Unavailable"} s · Memory:{" "}
                 {execution.memoryKb ?? "Unavailable"} KB
               </p>
               {[
@@ -364,8 +367,10 @@ export function Workspace({
           )}
         </section>
       </div>
+      <details open className="rounded-2xl border border-violet-200 bg-white"><summary className="cursor-pointer px-5 py-4 text-sm font-semibold text-brand">AI Coding Mentor · hints & debugging</summary>
       <CodingMentor language={language} source={source} problemId={problemId} disabled={!!busy || loading || loadFailed}
-        executionError={demoMode ? '' : execution ? ['Run status: ' + execution.verdict, 'Run stdout: ' + execution.stdout, 'Run stderr: ' + execution.stderr, 'Diagnostics: ' + execution.compileOutput, execution.exception || ''].join('\n') : ''}/>
+        executionError={demoMode ? '' : execution ? ['Run status: ' + execution.verdict, 'Run stdout: ' + execution.stdout, 'Run stderr: ' + execution.stderr, 'Diagnostics: ' + execution.compileOutput, execution.exception || '', submissionSummary ? `Submission aggregate: ${submissionSummary.verdict}; ${submissionSummary.passed}/${submissionSummary.total} passed. Hidden test details are unavailable.` : ''].join('\n') : submissionSummary ? `Submission aggregate: ${submissionSummary.verdict}; ${submissionSummary.passed}/${submissionSummary.total} passed. Hidden test details are unavailable.` : ''}/>
+      </details>
     </div>
   );
 }

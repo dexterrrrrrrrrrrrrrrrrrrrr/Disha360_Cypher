@@ -1048,3 +1048,31 @@ Docker runtime did not provide a verified untrusted-code isolation boundary; no
 unsafe local runner is enabled or claimed. OneCompiler and gated Judge0 remain
 unchanged. Setup, model/hardware estimates, test distinctions and requirements for
 a separate hardened runner are in [LOCAL_DEVELOPMENT.md](LOCAL_DEVELOPMENT.md).
+
+## Development Docker execution worker
+
+`tools/docker-runner/worker.mjs` is a separate loopback HTTP worker with generated
+private local authentication. Express uses `DockerExecutionProvider`; it never
+accesses Docker or runs student subprocesses. Explicit
+`CODING_EXECUTION_PROVIDER=docker` selects the provider only in development.
+OneCompiler/Judge0 behavior and the readiness checker (commit 642f579) are preserved.
+
+Every test runs in a fresh non-root container with inspected network/capability/
+filesystem/memory/CPU/PID controls. Source is data to a fixed container preparation
+command; compilation/execution use fixed Docker argument arrays. The worker kills
+and removes the whole sandbox after completion, failure, timeout or disconnect.
+Actual stdout/stderr, compiler errors, exit status and wall elapsed time reach Run.
+Existing deterministic hidden-test grading, private persistence and analytics are
+reused. Hidden inputs, outputs and diagnostics are never returned to the browser.
+
+The challenge view places public statement/examples/constraints beside the editor
+on desktop, stacks on mobile, and exposes actual output and aggregate test results.
+A collapsible Ollama mentor includes explicit error/hint/code actions and can receive
+only public execution/aggregate submission context, never hidden test details.
+No new MongoDB model or production data changes are required.
+
+The earlier disabled-local-execution limitation is superseded by this opt-in local
+worker, **not** by a production sandbox. Standard Docker kernel escape and host
+security risks remain; production selection is rejected. Full local setup and
+separate production infrastructure requirements are in
+[DOCKER_SANDBOX.md](DOCKER_SANDBOX.md).

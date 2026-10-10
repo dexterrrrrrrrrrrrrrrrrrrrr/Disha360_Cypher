@@ -1,3 +1,4 @@
+import { configureExecution } from './executionProvider.js';
 import { OllamaAIService } from './ollamaAI.js';
 import { GoogleGenAI } from '@google/genai';
 import type { AISettings } from './aiProvider.js';
@@ -32,7 +33,12 @@ export async function checkProviders(settings: Settings, lookup: ModelReader = r
   }
   if (settings.AI_PROVIDER === 'gemini' && !key?.trim() && !/^gemini-[a-zA-Z0-9.-]+$/.test(settings.GEMINI_MODEL))
     checks.push({ feature: 'Gemini model', status: 'blocked', message: 'GEMINI_MODEL is missing or malformed. Configure an exact supported Free Tier identifier alongside the credential; no model is guessed.' });
-  if (!settings.ONECOMPILER_API_KEY?.trim()) checks.push({ feature: 'OneCompiler Run and Submit', status: 'blocked', message: 'Missing ONECOMPILER_API_KEY. Configure it in secure backend environment settings.' });
+  if (settings.CODING_EXECUTION_PROVIDER === 'docker') {
+    const execution = configureExecution(settings);
+    const status = execution.provider?.availability ? await execution.provider.availability() : undefined;
+    checks.push({ feature: 'Local Docker Run and Submit', status: status?.available ? 'verified' : 'blocked', message: status?.message || execution.message || 'Start the local Docker worker first.' });
+  }
+  else if (!settings.ONECOMPILER_API_KEY?.trim()) checks.push({ feature: 'OneCompiler Run and Submit', status: 'blocked', message: 'Missing ONECOMPILER_API_KEY. Configure it in secure backend environment settings.' });
   else if (!settings.ONECOMPILER_ENABLED) checks.push({ feature: 'OneCompiler Run and Submit', status: 'blocked', message: 'Set ONECOMPILER_ENABLED=true after confirming free credits and billing restrictions.' });
   else if (settings.CODING_DEMO_MODE) checks.push({ feature: 'OneCompiler Run and Submit', status: 'blocked', message: 'Set CODING_DEMO_MODE=false to display real execution actions.' });
   else checks.push({ feature: 'OneCompiler Run and Submit', status: 'configured', message: 'Credential and feature settings are present. Credential validity, credits and execution remain unverified: this check never runs code or consumes execution credits.' });

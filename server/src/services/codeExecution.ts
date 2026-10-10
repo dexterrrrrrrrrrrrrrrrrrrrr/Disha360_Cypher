@@ -23,9 +23,11 @@ export interface ExecutionResult {
   timeSeconds: number | null;
   memoryKb: number | null;
   outputTruncated: boolean;
+  exitCode?: number | null;
 }
 export interface ExecutionProvider {
   name: string;
+  availability?(): Promise<{ available: boolean; message: string }>;
   execute(input: CodeInput): Promise<ExecutionResult>;
   executeBatch?(input: Omit<CodeInput, 'stdin'>, stdin: string[]): Promise<ExecutionResult[]>;
 }

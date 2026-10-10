@@ -44,3 +44,7 @@ it('reports optional OpenAI configuration without making paid calls or using fal
   const missing = await checkProviders({ ...settings(), AI_PROVIDER: 'openai', OPENAI_API_KEY: undefined }, lookup);
   expect(missing.checks[0].status).toBe('blocked'); expect(missing.checks[0].message).toContain('Select Ollama'); expect(lookup).not.toHaveBeenCalled();
 });
+it('checks local Docker independently of OneCompiler credentials and preserves the readiness command', async()=>{
+  const result=await checkProviders({...envSchema.parse({CODING_EXECUTION_PROVIDER:'docker'}),AI_PROVIDER:'openai',DOCKER_RUNNER_TOKEN_FILE:'/nonexistent/local-token'});
+  expect(result.checks.at(-1)?.feature).toBe('Local Docker Run and Submit');expect(JSON.stringify(result.checks.at(-1))).not.toContain('ONECOMPILER_API_KEY');
+});

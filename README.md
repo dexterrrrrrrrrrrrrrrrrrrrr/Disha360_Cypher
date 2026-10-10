@@ -858,6 +858,7 @@ The mentor supports streaming Ollama chat, Markdown, copyable code, progressive
 hints and clearly labeled unverified guidance. Gemini/manual key selection and
 optional explicitly configured OpenAI remain available; no automatic fallback.
 
-Local arbitrary-code execution is deliberately disabled pending a verified
-sandbox. Existing OneCompiler, gated Judge0 and labeled development Demo Mode
+Free local code execution is now available through an opt-in, separate Docker
+worker in development. See [Docker setup and real execution tests](docs/DOCKER_SANDBOX.md).
+Public production activation is rejected. Existing OneCompiler, gated Judge0 and labeled development Demo Mode
 are preserved. AI never judges test-case correctness. No private `.env` is changed.

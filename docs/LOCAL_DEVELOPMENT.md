@@ -93,50 +93,14 @@ actual saved answers and labels numerical scores as AI-generated assessments.
 History and feedback remain private to that student's account. Progress shows
 saved answers only. Failed inference never becomes a fabricated question/score.
 
-## Local execution: deliberately disabled
+## Real local code execution
 
-**This release does not enable a local untrusted-code runner.** The inspected
-cloud Docker daemon offers only standard runc and no verified extra sandbox
-boundary. Docker availability alone does not establish safe arbitrary-code
-execution. `LOCAL_CODE_EXECUTION_ENABLED=false` is the only accepted value in
-all environments; `true` fails configuration validation. No submitted program is
-run in Express, a host interpreter, `eval`, `child_process`, or an unrestricted
-host shell. No Docker socket is exposed to the application.
-
-The coding editor, drafts and mentor work independently of execution. Existing
-OneCompiler remains optional; genuine Run/Submit need its authorized credential,
-explicit enablement and credits. Existing Judge0 remains behind
-`JUDGE0_SECURITY_CONFIRMED=false` by default. Development-only Coding Demo Mode
-still produces clearly labeled illustrative output, never actual execution or
-accepted submissions.
-
-### What is required before enabling free local judging
-
-On your Mac, install Docker Desktop through its official installer or
-`brew install --cask docker`, then start Docker Desktop. **Do not attach its socket
-to Disha360 or run student programs with an unrestricted `docker run`.** A
-separate, audited runner must be deployed on a dedicated disposable Linux VM
-(or another stronger isolation boundary), outside the application host, with:
-
-- An independently verified maintained sandbox/runtime (for example gVisor or
-  microVMs), patched kernel and toolchains, and a narrowly authenticated runner API.
-- Four separately pinned, verified Python/Java/C++/JavaScript images; no image
-  pulls driven by student input, no secrets in images or inherited environments.
-- No network, read-only root, isolated ephemeral writable workspace, no host
-  mounts or Docker socket, non-root UID, dropped capabilities and no new privileges.
-- CPU, memory and PID cgroup limits, compile and run wall-clock deadlines,
-  external termination of the complete sandbox, capped stdout/stderr, bounded
-  request queues and concurrency (start with one).
-- Tests for infinite loops, memory/output/PID exhaustion, network denial,
-  filesystem/secret denial, timeout cleanup and genuine results in all languages.
-- Backend-only hidden test loading and deterministic existing output comparison;
-  aggregate hidden results only. Keep authentication, CSRF, origin and rate limits.
-
-These are commissioning requirements, **not a claim that this release implements
-or verifies that separate runner**. After that infrastructure is audited, a
-separate provider integration can be enabled explicitly. Until then free real
-local Run/Submit remains unavailable; use the truthful disabled state or Demo
-Mode. AI advice does not need execution credits and must not claim code ran.
+The separate opt-in Docker worker now supports Python, Java, C++ and JavaScript
+without cloud keys. See [DOCKER_SANDBOX.md](DOCKER_SANDBOX.md) for exact Docker
+Desktop, worker, backend/frontend setup, execution controls and real test commands.
+Set `CODING_EXECUTION_PROVIDER=docker` only in development, start the worker first,
+and keep `CODING_DEMO_MODE=false` for genuine Run/Submit. Public production activation
+is rejected. OneCompiler, gated Judge0 and labeled demo actions remain available.
 
 ## Configuration and limits
 
@@ -145,7 +109,7 @@ Mode. AI advice does not need execution credits and must not claim code ran.
 | `AI_PROVIDER=ollama` | Select local AI explicitly; `gemini` and `openai` remain available |
 | `OLLAMA_BASE_URL=http://127.0.0.1:11434` | Backend-only loopback HTTP or trusted HTTPS origin; no credentials/path/query |
 | `OLLAMA_MODEL=` | Exact installed model name; no automatic pull/default |
-| `LOCAL_CODE_EXECUTION_ENABLED=false` | Fail-closed disabled local execution |
+| `LOCAL_CODE_EXECUTION_ENABLED=false` | Legacy reserved flag; use explicit Docker provider selection |
 | `ONECOMPILER_ENABLED=false` | Optional cloud execution disabled |
 | `CODING_DEMO_MODE=false` | Keep demo off; true allowed only in development |
 | `JUDGE0_SECURITY_CONFIRMED=false` | Existing Judge0 safety gate remains off |
@@ -174,9 +138,8 @@ npm run build
 
 Automated Ollama tests use mocked responses and a local HTTP fixture implementing
 the documented contract. They are **not real model integration tests**. The
-workspace has no installed Ollama/model; live inference was not verified. Local
-code execution tests verify the disabled security gate; no real sandbox execution
-was performed. Existing OneCompiler/Judge0 mocks and protection tests remain.
+workspace has no installed Ollama/model; live inference was not verified. The separate Docker sandbox has real execution and authenticated grading tests;
+see DOCKER_SANDBOX.md for the current results and production restrictions. Existing OneCompiler/Judge0 mocks and protection tests remain.
 
 Render cannot access your Mac's `127.0.0.1`. A public Disha360 deployment still
 requires reachable MongoDB, a separately provisioned trusted AI inference server

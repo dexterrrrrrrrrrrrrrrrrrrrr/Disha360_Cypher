@@ -12,7 +12,10 @@ export const envSchema = z.object({
   AI_PROVIDER: z.enum(['gemini', 'openai', 'ollama']).default('gemini'),
   OLLAMA_BASE_URL: z.string().url().default('http://127.0.0.1:11434').refine(value => { const u = new URL(value); return !u.username && !u.password && u.pathname === '/' && !u.search && !u.hash && (u.protocol === 'https:' || (u.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(u.hostname))); }, 'Use a loopback HTTP or trusted HTTPS origin without credentials.'),
   OLLAMA_MODEL: z.string().trim().max(100).default(''),
-  LOCAL_CODE_EXECUTION_ENABLED: z.enum(['false']).default('false'),
+  LOCAL_CODE_EXECUTION_ENABLED: z.enum(['false']).default('false'), // Legacy setting; use the explicit Docker provider selection.
+  CODING_EXECUTION_PROVIDER: z.enum(['auto', 'docker', 'onecompiler', 'judge0', 'disabled']).default('auto'),
+  DOCKER_RUNNER_URL: z.string().url().default('http://127.0.0.1:4010').refine(value => { const u = new URL(value); return u.protocol === 'http:' && u.hostname === '127.0.0.1' && !u.username && !u.password && u.pathname === '/' && !u.search && !u.hash; }, 'Use the local worker loopback HTTP origin.'),
+  DOCKER_RUNNER_TOKEN_FILE: z.preprocess(v => v === '' ? undefined : v, z.string().min(1).optional()),
   GEMINI_API_KEY: z.string().trim().optional(),
   GEMINI_API_KEY_BACKUP: z.string().trim().optional(),
   GEMINI_MODEL: z.string().trim().max(100).default(''),
@@ -29,6 +32,7 @@ export const envSchema = z.object({
   OPENAI_MODEL: z.string().trim().min(1).max(100).default('gpt-4.1-mini'),
   MONGODB_URI: z.preprocess(value => value === '' ? undefined : value, z.string().regex(/^mongodb(?:\+srv)?:\/\//, 'Use a MongoDB connection URI').optional())
 }).superRefine((value, ctx) => {
+  if (value.CODING_EXECUTION_PROVIDER === 'docker' && value.NODE_ENV !== 'development') ctx.addIssue({ code: 'custom', path: ['CODING_EXECUTION_PROVIDER'], message: 'Local Docker execution is development-only' });
   if (value.NODE_ENV === 'production' && !value.MONGODB_URI) ctx.addIssue({ code: 'custom', path: ['MONGODB_URI'], message: 'Required in production' });
   if (value.COOKIE_SAME_SITE === 'none' && value.NODE_ENV !== 'production') ctx.addIssue({ code: 'custom', path: ['COOKIE_SAME_SITE'], message: 'SameSite=None requires production HTTPS cookies' });
   if (value.NODE_ENV === 'production') {
